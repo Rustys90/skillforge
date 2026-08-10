@@ -76,3 +76,16 @@ CREATE TABLE IF NOT EXISTS crawl_state (
   value       JSONB NOT NULL DEFAULT '{}',
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Real install tracking, replacing the old placeholder skills.downloads counter.
+-- One row per install event; lets "trending" filter by real time windows
+-- (daily/weekly) instead of an all-time static count.
+CREATE TABLE IF NOT EXISTS installs (
+  id          BIGSERIAL PRIMARY KEY,
+  skill_id    BIGINT NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
+  ip_hash     TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_installs_skill_id ON installs (skill_id);
+CREATE INDEX IF NOT EXISTS idx_installs_created_at ON installs (created_at DESC);

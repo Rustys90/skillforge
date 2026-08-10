@@ -53,15 +53,62 @@ export async function getRelatedSkills(tags, excludeId, limit = 3) {
 }
 
 export async function getTrending({ window = "weekly", limit = 100 } = {}) {
+  const windowInterval = {
+    daily: "1 day",
+    weekly: "7 days",
+    hot: "3 days",
+    overall: null,
+  }[window] || "7 days";
+
+  if (windowInterval) {
+    const { rows } = await query(
+      `SELECT s.id, s.name, s.owner, s.repo, s.path, s.stars,
+              COALESCE(i.install_count, 0) AS downloads
+       FROM skills s
+       LEFT JOIN (
+         SELECT skill_id, COUNT(*) AS install_count
+         FROM installs
+         WHERE created_at > now() - $1::interval
+         GROUP BY skill_id
+       ) i ON i.skill_id = s.id
+       WHERE s.duplicate_of IS NULL
+       ORDER BY COALESCE(i.install_count, 0) DESC, s.stars DESC
+       LIMIT $2`,
+      [windowInterval, limit]
+    );
+    return rows;
+  }
+
   const { rows } = await query(
-    `SELECT id, name, owner, repo, path, stars, downloads
-     FROM skills
-     WHERE duplicate_of IS NULL
-     ORDER BY downloads DESC, stars DESC
+    `SELECT s.id, s.name, s.owner, s.repo, s.path, s.stars,
+            COALESCE(i.install_count, 0) AS downloads
+     FROM skills s
+     LEFT JOIN (
+       SELECT skill_id, COUNT(*) AS install_count
+       FROM installs
+       GROUP BY skill_id
+     ) i ON i.skill_id = s.id
+     WHERE s.duplicate_of IS NULL
+     ORDER BY COALESCE(i.install_count, 0) DESC, s.stars DESC
      LIMIT $1`,
     [limit]
   );
   return rows;
+}
+
+export async function recordInstall(owner, repo, path, ipHash) {
+  const { rows } = await query(
+    `SELECT id FROM skills WHERE owner = $1 AND repo = $2 AND path = $3`,
+    [owner, repo, path]
+  );
+  const skill = rows[0];
+  if (!skill) return false;
+
+  await query(
+    `INSERT INTO installs (skill_id, ip_hash, created_at) VALUES ($1, $2, now())`,
+    [skill.id, ipHash]
+  );
+  return true;
 }
 
 export async function upsertSkill(skill) {
