@@ -1,12 +1,16 @@
 // app/api/cron/crawl/route.js
-// Triggerable by Vercel Cron OR any external scheduler (see README — Vercel Hobby
-// caps built-in Cron at once/day; an external scheduler hitting this same route
-// works on any cadence while staying on the free tier).
-//
+// Triggerable by any scheduler (AWS EventBridge Scheduler in production).
 // Protected by CRON_SECRET so it can't be triggered by randoms hitting the URL.
+//
+// Alternates between two search modes on each run:
+//  - "priority": high-star repos first (stars:>100), so the site fills with
+//    real, popular skills fast instead of crawling alphabetically/randomly
+//  - "sweep": the general filename:SKILL.md search, cursor-paginated, for
+//    full long-tail coverage over time
+// This gives good content quickly without needing to copy anyone else's dataset.
 
 import { searchSkillFiles, getFileContent, getRepoInfo, throttle } from "../../../../lib/github.js";
-import { parseSkillContent, hashContent } from "../../../../lib/parse-skill.js";
+import { parseSkillContent, hashContent, looksLikeAgentSkill } from "../../../../lib/parse-skill.js";
 import { scanContent, canAutoPublish } from "../../../../lib/safety-scan.js";
 import { upsertSkill, insertPendingSkill, getCrawlCursor, setCrawlCursor } from "../../../../db/queries.js";
 
@@ -20,16 +24,25 @@ export async function GET(request) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const cursor = (await getCrawlCursor("code_search")) || { page: 1 };
-  const results = { processed: 0, published: 0, queued: 0, errors: 0 };
+  const state = (await getCrawlCursor("code_search")) || { sweepPage: 1, priorityPage: 1, mode: "priority" };
+  const mode = state.mode === "priority" ? "priority" : "sweep";
+  const nextMode = mode === "priority" ? "sweep" : "priority";
+
+  const results = { mode, processed: 0, published: 0, queued: 0, rejected_not_skill: 0, errors: 0 };
 
   try {
-    const searchRes = await searchSkillFiles({ page: cursor.page, perPage: BATCH_SIZE });
+    const page = mode === "priority" ? state.priorityPage : state.sweepPage;
+    const qualifiers = mode === "priority" ? "stars:>100" : "";
+
+    const searchRes = await searchSkillFiles({ query: qualifiers, page, perPage: BATCH_SIZE });
     const items = searchRes.items || [];
 
     if (items.length === 0) {
-      await setCrawlCursor("code_search", { page: 1 });
-      return Response.json({ ...results, note: "no more results, cursor reset to page 1" });
+      const resetState = mode === "priority"
+        ? { ...state, priorityPage: 1, mode: nextMode }
+        : { ...state, sweepPage: 1, mode: nextMode };
+      await setCrawlCursor("code_search", resetState);
+      return Response.json({ ...results, note: `${mode} exhausted, reset and switching to ${nextMode} next run` });
     }
 
     for (const item of items) {
@@ -45,6 +58,11 @@ export async function GET(request) {
           getFileContent(owner, repo, path),
           getRepoInfo(owner, repo),
         ]);
+
+        if (!looksLikeAgentSkill(content)) {
+          results.rejected_not_skill++;
+          continue;
+        }
 
         const parsed = parseSkillContent(content, repo);
         const contentHash = hashContent(content);
@@ -79,7 +97,10 @@ export async function GET(request) {
       }
     }
 
-    await setCrawlCursor("code_search", { page: cursor.page + 1 });
+    const advancedState = mode === "priority"
+      ? { ...state, priorityPage: page + 1 }
+      : { ...state, sweepPage: page + 1 };
+    await setCrawlCursor("code_search", advancedState);
     return Response.json(results);
   } catch (err) {
     console.error("[crawl] run failed:", err.message);

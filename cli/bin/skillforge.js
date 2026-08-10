@@ -50,7 +50,7 @@ program
 
     const destDir = path.join(process.cwd(), ".claude", "skills", skillName);
     if (fs.existsSync(destDir)) {
-      console.error(`${destDir} already exists — remove it first if you want to reinstall.`);
+      console.error(`${destDir} already exists \u2014 remove it first if you want to reinstall.`);
       process.exit(1);
     }
 
@@ -64,6 +64,16 @@ program
       fs.writeFileSync(path.join(destDir, "SKILL.md"), skillMd);
 
       console.log(`Installed ${skillName} to ${destDir}`);
+
+      try {
+        await fetch(`${API_BASE}/skills/track-install`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ owner, repo, path: `${skillPath}/SKILL.md` }),
+        });
+      } catch {
+        // silently ignore \u2014 tracking is not critical to the install succeeding
+      }
     } catch (err) {
       console.error("Install failed:", err.message);
       process.exit(1);
