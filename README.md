@@ -7,7 +7,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/status-scaffold--complete-c9a961?style=for-the-badge" />
   <img src="https://img.shields.io/badge/license-MIT-1D4ED8?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/stack-Next.js%20%2B%20Postgres-0a0a0b?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/stack-Next.js%20%2B%20Postgres%20%2B%20AWS-0a0a0b?style=for-the-badge" />
 </p>
 
 ---
@@ -23,11 +23,12 @@ A searchable registry of AI agent skills (`SKILL.md` files), indexed from public
 ### ⚙️ Stack
 
 <p align="center">
-  <img src="https://skillicons.dev/icons?i=nextjs,react,postgres,vercel,nodejs,threejs&theme=dark" />
+  <img src="https://skillicons.dev/icons?i=nextjs,react,postgres,aws,nodejs,threejs&theme=dark" />
 </p>
 
-- **Next.js (App Router)** on Vercel — frontend + API routes together
+- **Next.js (App Router)** on **AWS Amplify Hosting** — frontend + API routes together
 - **Postgres via Neon** — full-text search through `tsvector` + GIN index
+- **AWS EventBridge Scheduler** — triggers the crawler on any interval, no daily-limit constraint
 - **Three.js** — cinematic 3D hero, no heavy framework dependency
 - **Separate publishable CLI** (`cli/`) — `npx skillforge find/add/list`
 
@@ -57,12 +58,10 @@ A searchable registry of AI agent skills (`SKILL.md` files), indexed from public
 ### 🚀 Setup
 
 **1. Database**
-```bash
-psql "$DATABASE_URL" -f db/schema.sql
-```
+Run `db/schema.sql` against your Neon database — easiest via the Neon console's SQL Editor (paste the file's contents and run), or `psql "$DATABASE_URL" -f db/schema.sql` if you have psql installed locally.
 
 **2. Environment**
-Copy `.env.example` → `.env.local`, fill in every value.
+Copy `.env.example` → `.env.local` for local dev. **Never commit real secrets** — in production these live in Amplify's environment variable settings or AWS Secrets Manager, not in any file in this repo.
 
 **3. Seed the registry**
 ```bash
@@ -76,21 +75,24 @@ npm install
 npm run dev
 ```
 
-**5. Deploy**
-Push to GitHub → import into Vercel → add env vars → deploy.
+**5. Deploy to AWS Amplify**
+1. In the AWS Amplify console, choose "Host a web app" → connect this GitHub repo.
+2. Amplify auto-detects `amplify.yml` for the build config.
+3. Add environment variables in Amplify's App Settings → Environment variables: `DATABASE_URL`, `GITHUB_TOKEN`, `CRON_SECRET`, `TRUSTED_OWNERS`, `AUTO_PUBLISH_STAR_THRESHOLD`, `ADMIN_PASSWORD`, `SITE_URL`.
+4. Deploy. Amplify gives you a `*.amplifyapp.com` URL immediately; add your own domain (e.g. via Route 53) in Amplify's Domain Management afterward.
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=rect&color=0:0a0a0b,50:1D4ED8,100:c9a961&height=3&section=header"/>
 </p>
 
-### ⏱️ Crawler scheduling
+### ⏱️ Crawler scheduling (AWS EventBridge)
 
-Vercel's free Hobby tier caps built-in Cron at **once per day**, and Hobby is non-commercial-only. The crawler route doesn't care who triggers it — point any scheduler (GitHub Actions, cron-job.org) at:
+The crawler is just an API route (`/api/cron/crawl`) — it doesn't care what triggers it. On AWS:
 
-```
-GET /api/cron/crawl
-Header: x-cron-secret: <your CRON_SECRET>
-```
+1. Create an **EventBridge Scheduler** rule (Amazon EventBridge → Scheduler → Create schedule).
+2. Set the schedule expression (e.g. `rate(1 hour)` or a cron expression for your preferred cadence — no once-a-day cap here, unlike Vercel's Hobby tier).
+3. Set the target as an **API destination**: `GET https://your-amplify-domain/api/cron/crawl` with header `x-cron-secret: <your CRON_SECRET>`.
+4. Store `CRON_SECRET` in **AWS Secrets Manager** and reference it in the EventBridge target config rather than hardcoding it in the rule.
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=rect&color=0:0a0a0b,50:1D4ED8,100:c9a961&height=3&section=header"/>
@@ -99,6 +101,14 @@ Header: x-cron-secret: <your CRON_SECRET>
 ### 🛡️ Safety, honestly
 
 New skills from untrusted/low-star owners land in a review queue (`/admin/review`), not live. Pattern-based static scanning catches common red flags — but like npm or PyPI, this is risk reduction, not a guarantee. See `lib/safety-scan.js`.
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=0:0a0a0b,50:1D4ED8,100:c9a961&height=3&section=header"/>
+</p>
+
+### 🔐 Secrets — read this
+
+Never commit a real `DATABASE_URL`, `GITHUB_TOKEN`, or any password to this repo, even privately. Use Amplify's environment variables or AWS Secrets Manager. If a real secret is ever pasted into a chat, commit, or file by mistake, rotate it immediately — don't just delete the file, since git history and chat logs can retain it.
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=rect&color=0:0a0a0b,50:1D4ED8,100:c9a961&height=3&section=header"/>
