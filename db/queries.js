@@ -21,7 +21,7 @@ export async function searchSkills({ q, tag, limit = 20, offset = 0 }) {
 
   const { rows } = await query(
     `SELECT id, name, description, has_real_desc, owner, repo, path, stars,
-            license_spdx_id, tags, downloads, repo_updated_at
+            license_spdx_id, tags, repo_updated_at
      FROM skills
      WHERE ${where} AND duplicate_of IS NULL
      ORDER BY ${rankExpr}
