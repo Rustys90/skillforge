@@ -27,7 +27,7 @@ A searchable registry of AI agent skills (`SKILL.md` files), indexed from public
 </p>
 
 - **Next.js (App Router)** on **AWS Amplify Hosting** — frontend + API routes together
-- **Postgres via Neon** — full-text search through `tsvector` + GIN index
+- **Postgres via Supabase** — full-text search through `tsvector` + GIN index
 - **AWS EventBridge Scheduler** — triggers the crawler on any interval, no daily-limit constraint
 - **Three.js** — cinematic 3D hero, no heavy framework dependency
 - **Separate publishable CLI** (`cli/`) — `npx skillforge find/add/list`
@@ -48,7 +48,7 @@ A searchable registry of AI agent skills (`SKILL.md` files), indexed from public
 | Frontend (3D hero, leaderboard, skill modal) | ✅ |
 | SEO (sitemap, JSON-LD, metadata) | ✅ |
 | CLI package | ✅ |
-| Real download tracking | ⏳ placeholder only |
+| Real download tracking | ✅ event-based, real time windows |
 | Distributed rate limiting | ⏳ in-memory only |
 
 <p align="center">
@@ -58,7 +58,7 @@ A searchable registry of AI agent skills (`SKILL.md` files), indexed from public
 ### 🚀 Setup
 
 **1. Database**
-Run `db/schema.sql` against your Neon database — easiest via the Neon console's SQL Editor (paste the file's contents and run), or `psql "$DATABASE_URL" -f db/schema.sql` if you have psql installed locally.
+Run `db/schema.sql` against your Supabase database — easiest via Supabase's SQL Editor (paste the file's contents and run), or `psql "$DATABASE_URL" -f db/schema.sql` if you have psql installed locally.
 
 **2. Environment**
 Copy `.env.example` → `.env.local` for local dev. **Never commit real secrets** — in production these live in Amplify's environment variable settings or AWS Secrets Manager, not in any file in this repo.
@@ -90,7 +90,7 @@ npm run dev
 The crawler is just an API route (`/api/cron/crawl`) — it doesn't care what triggers it. On AWS:
 
 1. Create an **EventBridge Scheduler** rule (Amazon EventBridge → Scheduler → Create schedule).
-2. Set the schedule expression (e.g. `rate(1 hour)` or a cron expression for your preferred cadence — no once-a-day cap here, unlike Vercel's Hobby tier).
+2. Set the schedule expression (e.g. `rate(1 hour)` or a cron expression for your preferred cadence — no once-a-day cap or non-commercial restriction to worry about).
 3. Set the target as an **API destination**: `GET https://your-amplify-domain/api/cron/crawl` with header `x-cron-secret: <your CRON_SECRET>`.
 4. Store `CRON_SECRET` in **AWS Secrets Manager** and reference it in the EventBridge target config rather than hardcoding it in the rule.
 
@@ -109,6 +109,14 @@ New skills from untrusted/low-star owners land in a review queue (`/admin/review
 ### 🔐 Secrets — read this
 
 Never commit a real `DATABASE_URL`, `GITHUB_TOKEN`, or any password to this repo, even privately. Use Amplify's environment variables or AWS Secrets Manager. If a real secret is ever pasted into a chat, commit, or file by mistake, rotate it immediately — don't just delete the file, since git history and chat logs can retain it.
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&color=0:0a0a0b,50:1D4ED8,100:c9a961&height=3&section=header"/>
+</p>
+
+### 🙏 Attribution
+
+Some seed data is sourced from the [Open Skills dataset](https://huggingface.co/datasets/open-index/open-skills) (open-index, Hugging Face), licensed under **ODC-By v1.0**. Original skill content belongs to each skill's respective author. Records from this source are tagged `source: 'seed-open-index'` in the database and are re-verified against live GitHub data by the crawler over time.
 
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=rect&color=0:0a0a0b,50:1D4ED8,100:c9a961&height=3&section=header"/>
