@@ -1,4 +1,4 @@
--- SkillForge database schema (Postgres / Neon)
+-- SkillForge database schema (Postgres / Supabase)
 -- Run this once against your DATABASE_URL before the first crawl or import.
 
 CREATE EXTENSION IF NOT EXISTS pg_trgm;

@@ -14,7 +14,9 @@ export function getPool() {
     }
     pool = new Pool({
       connectionString,
-      ssl: connectionString.includes("neon.tech") ? { rejectUnauthorized: false } : undefined,
+      // Supabase (and most managed Postgres hosts) require SSL; skip only for
+      // plain local development connections.
+      ssl: /localhost|127\.0\.0\.1/.test(connectionString) ? undefined : { rejectUnauthorized: false },
       max: 5,
     });
   }
