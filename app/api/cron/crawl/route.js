@@ -11,7 +11,7 @@
 
 import { searchSkillFiles, getFileContent, getRepoInfo, throttle } from "../../../../lib/github.js";
 import { parseSkillContent, hashContent, looksLikeAgentSkill } from "../../../../lib/parse-skill.js";
-import { scanContent, canAutoPublish } from "../../../../lib/safety-scan.js";
+import { scanContentFlags, canAutoPublish } from "../../../../lib/safety-scan.js";
 import { upsertSkill, insertPendingSkill, getCrawlCursor, setCrawlCursor } from "../../../../db/queries.js";
 
 export const maxDuration = 60;
@@ -66,7 +66,7 @@ export async function GET(request) {
 
         const parsed = parseSkillContent(content, repo);
         const contentHash = hashContent(content);
-        const flagReasons = scanContent(content);
+        const flagReasons = scanContentFlags(content);
 
         const skillRecord = {
           name: parsed.name,
