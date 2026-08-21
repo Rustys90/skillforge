@@ -2,6 +2,11 @@
 import HomeClient from "./HomeClient.jsx";
 import { getTrending } from "../db/queries.js";
 
+// This page depends on live DB data (trending skills) — without this, Next.js
+// may statically pre-render it at build time and serve a frozen cached copy
+// forever, regardless of later env var or database changes.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "SkillForge — find the right skill for your agent",
   description: "Search and install AI agent skills (SKILL.md files) for Claude, Cursor, and other coding agents. Indexed from public GitHub repos, updated daily.",
