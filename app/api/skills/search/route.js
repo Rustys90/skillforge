@@ -13,8 +13,8 @@ export async function GET(request) {
   const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10), 0);
 
   try {
-    const results = await searchSkills({ q, tag, limit, offset });
-    return Response.json({ results, count: results.length });
+    const { results, total } = await searchSkills({ q, tag, limit, offset });
+    return Response.json({ results, count: results.length, total });
   } catch (err) {
     console.error("[api/search] failed:", err.message);
     return Response.json({ error: "search failed" }, { status: 500 });
