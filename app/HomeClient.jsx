@@ -12,23 +12,8 @@ const FONT = {
 };
 
 function useDeviceTier() {
-  const [tier, setTier] = useState("checking");
-  useEffect(() => {
-    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) return setTier("low");
-    let gl = null;
-    try {
-      const c = document.createElement("canvas");
-      gl = c.getContext("webgl2") || c.getContext("webgl");
-    } catch (e) {}
-    if (!gl) return setTier("low");
-    const mem = navigator.deviceMemory || 4;
-    const cores = navigator.hardwareConcurrency || 4;
-    if (mem >= 6 && cores >= 6) setTier("high");
-    else if (mem >= 3 && cores >= 3) setTier("mid");
-    else setTier("low");
-  }, []);
-  return tier;
+  // Always load the full Three.js hero on every device
+  return "high";
 }
 
 function HeroScene({ tier }) {
@@ -315,7 +300,7 @@ export default function HomeClient({ initialTrending = [] }) {
       </nav>
 
       <section className="relative h-screen min-h-[640px] overflow-hidden">
-        {tier === "high" || tier === "mid" ? <HeroScene tier={tier} /> : <StaticFallback />}
+        <HeroScene tier="high" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0a0a0b]" />
         <div className="relative z-10 h-full flex flex-col items-center justify-center px-6 text-center">
           <span style={FONT.mono} className="text-[11px] uppercase tracking-[0.4em] text-[#c9a961] mb-6">The agent skill registry</span>
