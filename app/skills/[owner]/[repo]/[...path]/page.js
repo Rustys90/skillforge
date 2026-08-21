@@ -1,87 +1,107 @@
 // app/skills/[owner]/[repo]/[...path]/page.js
+import Link from "next/link";
 import { getSkillDetail, getRelatedSkills } from "../../../../../db/queries.js";
+import { severityFromFlags } from "../../../../../lib/safety-scan.js";
+
+export const dynamic = "force-dynamic";
+
+function skillHref(s) {
+  const path = (s.path || "").replace(/\/?SKILL\.md$/i, "");
+  return `/skills/${s.owner}/${s.repo}/${path}`;
+}
+
+function installCmd(s) {
+  const path = (s.path || "").replace(/\/?SKILL\.md$/i, "");
+  return `npx skillforge add ${s.owner}/${s.repo}/${path || s.name}`;
+}
+
+const SEV_STYLE = {
+  clean: { label: "Scanned — clean", color: "#6b9b6b" },
+  info: { label: "Scanned — info", color: "#8a8579" },
+  review: { label: "Scanned — review flags", color: "#c9a961" },
+  block: { label: "Scanned — high risk flags", color: "#c66" },
+};
 
 export async function generateMetadata({ params }) {
-  const { owner, repo, path } = params;
-  const skillPath = Array.isArray(path) ? path.join("/") : path;
-  const skill = await getSkillDetail(owner, repo, skillPath).catch(() => null);
-
-  if (!skill) {
-    return { title: "Skill not found" };
-  }
-
-  const title = `${skill.name} — install for Claude/Cursor agents | SkillForge`;
+  const { owner, repo, path } = await params;
+  const pathStr = Array.isArray(path) ? path.join("/") : path;
+  const skill = await getSkillDetail(owner, repo, pathStr).catch(() => null);
+  if (!skill) return { title: "Skill not found" };
   return {
-    title,
-    description: skill.description?.slice(0, 160),
-    alternates: { canonical: `/skills/${owner}/${repo}/${skillPath}` },
-    openGraph: { title, description: skill.description, type: "article" },
+    title: `${skill.name} — SkillForge`,
+    description: skill.description || `Install ${skill.name} for your agent`,
+    openGraph: {
+      title: skill.name,
+      description: skill.description || "",
+      type: "website",
+    },
   };
 }
 
 export default async function SkillPage({ params }) {
-  const { owner, repo, path } = params;
-  const skillPath = Array.isArray(path) ? path.join("/") : path;
-  const skill = await getSkillDetail(owner, repo, skillPath).catch(() => null);
+  const { owner, repo, path } = await params;
+  const pathStr = Array.isArray(path) ? path.join("/") : path;
+  const skill = await getSkillDetail(owner, repo, pathStr);
 
   if (!skill) {
-    return <div style={{ padding: 40, color: "#f5f3ee", background: "#0a0a0b", minHeight: "100vh" }}>Skill not found.</div>;
+    return (
+      <main style={{ padding: 48, background: "#0a0a0b", color: "#f5f3ee", minHeight: "100vh", fontFamily: "Inter, sans-serif" }}>
+        <p>Skill not found.</p>
+        <Link href="/" style={{ color: "#c9a961" }}>← Home</Link>
+      </main>
+    );
   }
 
-  const related = await getRelatedSkills(skill.tags, skill.id).catch(() => []);
-  const installCmd = `npx skillforge add ${skill.owner}/${skill.repo}/${skillPath.replace(/\/?SKILL\.md$/, "")}`;
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareSourceCode",
-    name: skill.name,
-    description: skill.description,
-    codeRepository: `https://github.com/${skill.owner}/${skill.repo}`,
-    programmingLanguage: "Markdown",
-    license: skill.license_spdx_id || undefined,
-  };
+  const related = await getRelatedSkills(skill.tags || [], skill.id, 4).catch(() => []);
+  const sev = severityFromFlags(skill.flag_reasons || []);
+  const badge = SEV_STYLE[sev] || SEV_STYLE.clean;
+  const cmd = installCmd(skill);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0b", color: "#f5f3ee", fontFamily: "Inter, sans-serif", padding: "80px 24px" }}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div style={{ maxWidth: 640, margin: "0 auto" }}>
-        <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 300, fontSize: 40 }}>{skill.name}</h1>
-        <p style={{ color: "#8a8579", fontFamily: "JetBrains Mono, monospace", fontSize: 13 }}>
-          {skill.owner} / {skill.repo}
-          {skill.license_spdx_id && <> · {skill.license_spdx_id}</>}
+    <main style={{ padding: "48px 24px", background: "#0a0a0b", color: "#f5f3ee", minHeight: "100vh", fontFamily: "Inter, sans-serif" }}>
+      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+        <Link href="/" style={{ color: "#6b6860", fontSize: 13, textDecoration: "none" }}>← SkillForge</Link>
+        <h1 style={{ fontFamily: "Fraunces, Georgia, serif", fontWeight: 300, fontSize: 36, margin: "16px 0 8px" }}>{skill.name}</h1>
+        <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 12, color: "#6b6860" }}>
+          {skill.owner}/{skill.repo} · {skill.stars}★ · {(skill.downloads || 0).toLocaleString()} installs
         </p>
-        <p style={{ color: "#c9c5bc", lineHeight: 1.7, marginTop: 24 }}>{skill.description}</p>
-
-        <div style={{ border: "1px solid #2a2825", borderRadius: 12, padding: 24, marginTop: 32, background: "#0f0e0c" }}>
-          <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "#c9a961", textTransform: "uppercase", letterSpacing: 2 }}>
-            Installation
-          </div>
-          <code style={{ display: "block", marginTop: 16, color: "#e8d5a0", fontFamily: "JetBrains Mono, monospace", wordBreak: "break-all" }}>
-            {installCmd}
-          </code>
-        </div>
-
-        {related.length > 0 && (
-          <div style={{ marginTop: 48 }}>
-            <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "#c9a961", textTransform: "uppercase", letterSpacing: 2, marginBottom: 16 }}>
-              Related skills
-            </div>
-            {related.map((r) => (
-              <a
-                key={r.id}
-                href={`/skills/${r.owner}/${r.repo}/${r.path}`}
-                style={{ display: "block", color: "#f5f3ee", padding: "12px 0", borderTop: "1px solid #1c1b19" }}
-              >
-                {r.name} <span style={{ color: "#6b6860", fontSize: 12 }}>— {r.owner}/{r.repo}</span>
-              </a>
+        <p style={{ fontSize: 12, color: badge.color, marginTop: 8 }}>{badge.label}</p>
+        {!skill.has_real_desc && (
+          <p style={{ fontSize: 11, color: "#c9a961", marginTop: 8 }}>Description generated</p>
+        )}
+        <p style={{ color: "#c9c5bc", lineHeight: 1.6, marginTop: 20 }}>{skill.description}</p>
+        {skill.tags?.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+            {skill.tags.map((t) => (
+              <Link key={t} href={`/?tag=${encodeURIComponent(t)}`} style={{ fontSize: 11, color: "#c9a961", border: "1px solid #c9a96140", borderRadius: 999, padding: "4px 10px", textDecoration: "none" }}>
+                {t}
+              </Link>
             ))}
           </div>
         )}
-
-        <a href="/" style={{ display: "inline-block", marginTop: 48, color: "#6b6860", fontFamily: "JetBrains Mono, monospace", fontSize: 12 }}>
-          ← Back to SkillForge
-        </a>
+        <div style={{ marginTop: 28, padding: 16, border: "1px solid #2a2825", borderRadius: 12, background: "#0f0e0c" }}>
+          <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 10, color: "#c9a961", letterSpacing: "0.2em", marginBottom: 8 }}>INSTALL</div>
+          <code style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 13, color: "#e8d5a0", wordBreak: "break-all" }}>{cmd}</code>
+        </div>
+        <p style={{ marginTop: 20 }}>
+          <a href={`https://github.com/${skill.owner}/${skill.repo}`} target="_blank" rel="noopener noreferrer" style={{ color: "#6b6860", fontSize: 12 }}>
+            View source repository →
+          </a>
+        </p>
+        {related.length > 0 && (
+          <section style={{ marginTop: 40 }}>
+            <h2 style={{ fontFamily: "Fraunces, Georgia, serif", fontWeight: 300, fontSize: 22 }}>Related</h2>
+            <ul style={{ listStyle: "none", padding: 0 }}>
+              {related.map((r) => (
+                <li key={r.id} style={{ marginTop: 12 }}>
+                  <Link href={skillHref(r)} style={{ color: "#f5f3ee", textDecoration: "none" }}>{r.name}</Link>
+                  <span style={{ color: "#6b6860", fontSize: 12 }}> · {r.stars}★</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
-    </div>
+    </main>
   );
 }
