@@ -1,40 +1,66 @@
 // db/queries.js
 import { query } from "./client.js";
 
+/** Normalize skill path variants used by CLI vs crawler (with/without SKILL.md). */
+export function normalizeSkillPath(path) {
+  if (!path) return "";
+  let p = String(path).replace(/^\/+/, "").replace(/\/+$/, "");
+  if (p.toLowerCase().endsWith("/skill.md")) p = p.slice(0, -"/skill.md".length);
+  else if (p.toLowerCase() === "skill.md") p = "";
+  return p;
+}
+
+
 export async function searchSkills({ q, tag, limit = 20, offset = 0 }) {
   const params = [];
-  let where = "1=1";
+  let where = "duplicate_of IS NULL";
 
   if (q && q.trim()) {
     params.push(q.trim());
-    where += ` AND search_vector @@ plainto_tsquery('english', $${params.length})`;
+    const qi = params.length;
+    where += ` AND (
+      search_vector @@ plainto_tsquery('english', $${qi})
+      OR name ILIKE '%' || $${qi} || '%'
+      OR description ILIKE '%' || $${qi} || '%'
+      OR similarity(name, $${qi}) > 0.2
+    )`;
   }
   if (tag) {
     params.push(tag);
     where += ` AND $${params.length} = ANY(tags)`;
   }
 
+  const countParams = [...params];
+  const { rows: countRows } = await query(
+    `SELECT COUNT(*)::int AS total FROM skills WHERE ${where}`,
+    countParams
+  );
+  const total = countRows[0]?.total ?? 0;
+
   params.push(limit, offset);
   const rankExpr = q && q.trim()
-    ? `ts_rank(search_vector, plainto_tsquery('english', $1)) DESC, stars DESC`
+    ? `ts_rank(search_vector, plainto_tsquery('english', $1)) DESC, similarity(name, $1) DESC, stars DESC`
     : `stars DESC`;
 
   const { rows } = await query(
     `SELECT id, name, description, has_real_desc, owner, repo, path, stars,
-            license_spdx_id, tags, repo_updated_at
+            license_spdx_id, tags, repo_updated_at, downloads
      FROM skills
-     WHERE ${where} AND duplicate_of IS NULL
+     WHERE ${where}
      ORDER BY ${rankExpr}
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
-  return rows;
+  return { results: rows, total };
 }
 
 export async function getSkillDetail(owner, repo, path) {
+  const raw = String(path || "").replace(/^\/+/, "");
+  const norm = normalizeSkillPath(raw);
+  const candidates = [...new Set([raw, norm, norm ? `${norm}/SKILL.md` : "SKILL.md"].filter((x) => x !== undefined && x !== null))];
   const { rows } = await query(
-    `SELECT * FROM skills WHERE owner = $1 AND repo = $2 AND path = $3 LIMIT 1`,
-    [owner, repo, path]
+    `SELECT * FROM skills WHERE owner = $1 AND repo = $2 AND path = ANY($3::text[]) LIMIT 1`,
+    [owner, repo, candidates]
   );
   return rows[0] || null;
 }
@@ -97,9 +123,20 @@ export async function getTrending({ window = "weekly", limit = 100 } = {}) {
 }
 
 export async function recordInstall(owner, repo, path, ipHash) {
+  const candidates = [];
+  const raw = String(path || "").replace(/^\/+/, "");
+  const norm = normalizeSkillPath(raw);
+  candidates.push(raw);
+  if (norm && norm !== raw) candidates.push(norm);
+  if (norm) candidates.push(`${norm}/SKILL.md`);
+  if (!raw.toLowerCase().endsWith("skill.md")) candidates.push(raw ? `${raw}/SKILL.md` : "SKILL.md");
+
+  const uniq = [...new Set(candidates.filter(Boolean))];
   const { rows } = await query(
-    `SELECT id FROM skills WHERE owner = $1 AND repo = $2 AND path = $3`,
-    [owner, repo, path]
+    `SELECT id FROM skills
+     WHERE owner = $1 AND repo = $2 AND path = ANY($3::text[])
+     LIMIT 1`,
+    [owner, repo, uniq]
   );
   const skill = rows[0];
   if (!skill) return false;
@@ -108,6 +145,7 @@ export async function recordInstall(owner, repo, path, ipHash) {
     `INSERT INTO installs (skill_id, ip_hash, created_at) VALUES ($1, $2, now())`,
     [skill.id, ipHash]
   );
+  await query(`UPDATE skills SET downloads = downloads + 1 WHERE id = $1`, [skill.id]);
   return true;
 }
 
@@ -132,8 +170,8 @@ export async function upsertSkill(skill) {
 
   const { rows } = await query(
     `INSERT INTO skills (name, description, has_real_desc, owner, repo, path, stars,
-                          license_spdx_id, content_hash, duplicate_of, raw_url, tags, source, repo_updated_at,
-                          indexed_at, last_crawled_at)
+                        license_spdx_id, content_hash, duplicate_of, raw_url, tags, source, repo_updated_at,
+                        indexed_at, last_crawled_at)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14, now(), now())
      ON CONFLICT (owner, repo, path) DO UPDATE SET
        name = EXCLUDED.name,
@@ -161,7 +199,7 @@ export async function insertPendingSkill(skill) {
 
   await query(
     `INSERT INTO pending_skills (name, description, has_real_desc, owner, repo, path, stars,
-                                  license_spdx_id, content_hash, raw_url, tags, source, raw_content, flag_reasons)
+                                license_spdx_id, content_hash, raw_url, tags, source, raw_content, flag_reasons)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
      ON CONFLICT (owner, repo, path) DO UPDATE SET
        stars = EXCLUDED.stars,
