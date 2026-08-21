@@ -1,19 +1,36 @@
 "use client";
-// app/HomeClient.jsx
-// Ports the approved demo design, wired to real API routes instead of sample data.
 
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-
-const FONT = {
-  display: { fontFamily: "'Fraunces', Georgia, serif" },
-  mono: { fontFamily: "'JetBrains Mono', ui-monospace, monospace" },
-  body: { fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" },
-};
+import Link from "next/link";
+import { Search, Star, Terminal, ExternalLink } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 
 function useDeviceTier() {
-  // Always load the full Three.js hero on every device
-  return "high";
+  const [tier, setTier] = useState("mid");
+  useEffect(() => {
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) return setTier("low");
+    const mem = navigator.deviceMemory || 4;
+    const cores = navigator.hardwareConcurrency || 4;
+    if (mem >= 6 && cores >= 6) setTier("high");
+    else if (mem >= 2 && cores >= 2) setTier("mid");
+    else setTier("low");
+  }, []);
+  return tier;
 }
 
 function HeroScene({ tier }) {
@@ -105,283 +122,243 @@ function HeroScene({ tier }) {
   return <div ref={mountRef} className="absolute inset-0" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />;
 }
 
-function StaticFallback() {
-  return (
-    <div className="absolute inset-0" style={{
-      background: "radial-gradient(ellipse at 50% 40%, rgba(201,169,97,0.14), transparent 60%), radial-gradient(circle at 20% 80%, rgba(201,169,97,0.06), transparent 50%)",
-    }} />
-  );
-}
 
-const TABS = [
-  { key: "overall", label: "Overall" },
-  { key: "hot", label: "Hot" },
-  { key: "weekly", label: "Weekly" },
-  { key: "daily", label: "Daily" },
-];
-const PAGE_SIZE = 10;
+function skillPath(s) {
+  return (s.path || "").replace(/\/?SKILL\.md$/i, "");
+}
+function skillHref(s) {
+  return `/skills/${s.owner}/${s.repo}/${skillPath(s)}`;
+}
+function installCmd(s) {
+  return `npx skillforge add ${s.owner}/${s.repo}/${skillPath(s) || s.name}`;
+}
 
 function Leaderboard({ onSelect }) {
   const [tab, setTab] = useState("weekly");
   const [items, setItems] = useState([]);
-  const [visible, setVisible] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     setLoading(true);
     fetch(`/api/skills/trending?window=${tab}&limit=100`)
       .then((r) => r.json())
       .then((d) => setItems(d.results || []))
+      .catch(() => setItems([]))
       .finally(() => setLoading(false));
-    setVisible(PAGE_SIZE);
   }, [tab]);
-
-  const shown = items.slice(0, visible);
-  const hasMore = visible < items.length;
-
   return (
-    <section className="relative px-6 md:px-12 py-28 max-w-5xl mx-auto">
-      <div className="flex items-end justify-between mb-12">
+    <section className="mx-auto max-w-3xl px-6 py-20">
+      <div className="mb-8 flex items-end justify-between gap-4">
         <div>
-          <span style={FONT.mono} className="text-[11px] uppercase tracking-[0.3em] text-[#c9a961]">Ranked</span>
-          <h2 style={FONT.display} className="text-4xl md:text-5xl text-[#f5f3ee] font-light mt-2">The leaderboard</h2>
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-primary">Leaderboard</p>
+          <h2 className="mt-2 font-serif text-3xl font-light tracking-tight">Trending skills</h2>
         </div>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList>
+            <TabsTrigger value="daily">Daily</TabsTrigger>
+            <TabsTrigger value="weekly">Weekly</TabsTrigger>
+            <TabsTrigger value="hot">Hot</TabsTrigger>
+            <TabsTrigger value="overall">All</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
-
-      <div className="flex gap-8 mb-10 border-b border-[#2a2825]">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            style={FONT.mono}
-            className={`pb-4 text-xs uppercase tracking-[0.15em] transition-colors relative ${
-              tab === t.key ? "text-[#c9a961]" : "text-[#6b6860] hover:text-[#a8a49a]"
-            }`}
-          >
-            {t.label}
-            {tab === t.key && <span className="absolute left-0 right-0 -bottom-px h-px bg-[#c9a961]" />}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div style={FONT.mono} className="text-center py-16 text-[#6b6860] text-xs uppercase tracking-widest">Loading</div>
-      ) : (
-        <>
-          <ol className="divide-y divide-[#1c1b19]">
-            {shown.map((s, i) => (
-              <li key={s.id} onClick={() => onSelect(s)} className="flex items-center gap-6 py-6 group cursor-pointer">
-                <span style={FONT.display} className={`w-12 shrink-0 text-right font-light text-2xl ${i < 3 ? "text-[#c9a961]" : "text-[#4a4740]"}`}>
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div style={FONT.body} className="text-lg text-[#f5f3ee] truncate">{s.name}</div>
-                  <div style={FONT.mono} className="text-[12px] text-[#8a8579] truncate mt-1">{s.owner}/{s.repo}</div>
-                </div>
-                <span style={FONT.mono} className="text-xs text-[#8a8579] shrink-0 hidden sm:block">
-                  {(s.downloads || 0).toLocaleString()} installs
-                </span>
+      <Card className="border-border/60 bg-card/80 backdrop-blur">
+        <CardContent className="p-0">
+          {loading && <p className="p-8 text-sm text-muted-foreground">Loading…</p>}
+          {!loading && items.length === 0 && (
+            <p className="p-8 text-sm text-muted-foreground">No installs yet — be the first.</p>
+          )}
+          <ul className="divide-y divide-border/50">
+            {items.map((s, i) => (
+              <li key={s.id || `${s.owner}-${s.repo}-${i}`}>
+                <button type="button" onClick={() => onSelect(s)}
+                  className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.03]">
+                  <span className="w-8 font-mono text-xs text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{s.name}</div>
+                    <div className="truncate font-mono text-xs text-muted-foreground">{s.owner}/{s.repo}</div>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><Star className="h-3 w-3 text-primary" /> {s.stars ?? 0}</span>
+                    <span>{s.downloads ?? 0} installs</span>
+                  </div>
+                </button>
               </li>
             ))}
-          </ol>
-          <div className="pt-12 text-center">
-            {hasMore ? (
-              <button
-                onClick={() => setVisible((v) => Math.min(v + PAGE_SIZE, items.length))}
-                style={FONT.mono}
-                className="text-xs uppercase tracking-[0.2em] text-[#c9a961] border border-[#c9a961]/40 rounded-full px-8 py-3 hover:bg-[#c9a961]/10 transition-colors"
-              >
-                Load more
-              </button>
-            ) : (
-              <span style={FONT.mono} className="text-[11px] tracking-widest text-[#4a4740] uppercase">End of index</span>
-            )}
-          </div>
-        </>
-      )}
+          </ul>
+        </CardContent>
+      </Card>
     </section>
   );
 }
 
-function SkillModal({ skill, onClose }) {
-  const [copied, setCopied] = useState(false);
-  useEffect(() => {
-    if (!skill) return;
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
-  }, [skill, onClose]);
-
+function SkillDialog({ skill, open, onOpenChange }) {
   if (!skill) return null;
-  const skillPath = (skill.path || "").replace(/\/?SKILL\.md$/, "");
-  const installCmd = `npx skillforge add ${skill.owner}/${skill.repo}/${skillPath || skill.name}`;
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(installCmd);
-      setCopied(true);
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = installCmd; ta.style.position = "fixed"; ta.style.opacity = "0";
-      document.body.appendChild(ta); ta.focus(); ta.select();
-      document.execCommand("copy"); document.body.removeChild(ta);
-      setCopied(true);
-    }
-    setTimeout(() => setCopied(false), 1800);
-  };
-
+  const cmd = installCmd(skill);
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md px-4 py-8" onClick={onClose}>
-      <div
-        className="relative bg-[#141310] border border-[#2a2825] rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto"
-        style={{ animation: "modalIn 0.25s cubic-bezier(0.16,1,0.3,1) both" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-[#c9a961] to-transparent" />
-        <div className="p-7 md:p-9">
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <div className="min-w-0">
-              <div style={FONT.display} className="text-2xl text-[#f5f3ee] font-light truncate">{skill.name}</div>
-              <div style={FONT.mono} className="text-[11px] text-[#6b6860] mt-2 truncate">{skill.owner} / {skill.repo}</div>
-            </div>
-            <button onClick={onClose} className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full border border-[#2a2825] text-[#6b6860] hover:text-[#f5f3ee] hover:border-[#c9a961] transition-all">✕</button>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg border-border/60 bg-popover sm:rounded-xl">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl font-light">{skill.name}</DialogTitle>
+          <DialogDescription className="font-mono text-xs">
+            {skill.owner}/{skill.repo} · {skill.stars ?? 0}★
+          </DialogDescription>
+        </DialogHeader>
+        <p className="text-sm leading-relaxed text-muted-foreground">{skill.description}</p>
+        {skill.tags?.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {skill.tags.map((t) => (
+              <Badge key={t} variant="gold">{t}</Badge>
+            ))}
           </div>
-
-          {!skill.has_real_desc && (
-            <span style={FONT.mono} className="inline-block text-[10px] px-2.5 py-1 rounded-full border border-[#c9a961]/40 text-[#c9a961] uppercase tracking-wide mb-4">
-              description generated
-            </span>
-          )}
-          <p style={FONT.body} className="text-[15px] text-[#c9c5bc] leading-relaxed mb-8 font-light">{skill.description}</p>
-
-          <div className="rounded-xl border border-[#2a2825] bg-[#0f0e0c] p-6">
-            <div style={FONT.mono} className="text-[10px] uppercase tracking-[0.25em] text-[#c9a961] mb-5">Installation</div>
-            <div className="flex flex-col gap-2 bg-black/40 border border-[#2a2825] rounded-lg px-4 py-3 mb-2">
-              <code style={FONT.mono} className="text-[13px] text-[#e8d5a0] break-all leading-relaxed">{installCmd}</code>
-              <button
-                onClick={copy}
-                style={FONT.mono}
-                className={`self-start text-[11px] px-3 py-2 rounded-md transition-colors border ${copied ? "bg-[#c9a961]/10 border-[#c9a961] text-[#c9a961]" : "border-[#2a2825] text-[#c9c5bc] hover:border-[#c9a961]"}`}
-              >
-                {copied ? "copied" : "copy"}
-              </button>
-            </div>
+        )}
+        <div className="rounded-lg border border-border/60 bg-background/60 p-4">
+          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-primary">
+            <Terminal className="h-3 w-3" /> Install
           </div>
-
-          <a href={`/skills/${skill.owner}/${skill.repo}/${(skill.path || "").replace(/\/?SKILL\.md$/i, "")}`}
-             style={FONT.mono} className="inline-flex items-center gap-1.5 mt-7 mr-4 text-[11px] text-[#c9a961] hover:text-[#e8d5a0] transition-colors uppercase tracking-wide">
-          Open skill page →
-        </a>
-        <a href={`https://github.com/${skill.owner}/${skill.repo}`} target="_blank" rel="noopener noreferrer"
-             style={FONT.mono} className="inline-flex items-center gap-1.5 mt-7 text-[11px] text-[#6b6860] hover:text-[#c9a961] transition-colors uppercase tracking-wide">
-            View source repository →
-          </a>
+          <code className="break-all font-mono text-sm text-primary/90">{cmd}</code>
         </div>
-      </div>
-    </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="default" size="sm">
+            <Link href={skillHref(skill)}>Open skill page</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <a href={`https://github.com/${skill.owner}/${skill.repo}`} target="_blank" rel="noopener noreferrer">
+              Source <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+const TAGS = ["pdf", "xlsx", "api", "browser", "git", "testing"];
 
 export default function HomeClient({ initialTrending = [] }) {
   const tier = useDeviceTier();
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("");
-  const [totalResults, setTotalResults] = useState(null);
   const [results, setResults] = useState(initialTrending);
-  const [selectedSkill, setSelectedSkill] = useState(null);
+  const [totalResults, setTotalResults] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
-    const handle = setTimeout(() => {
-      const url = query.trim()
-        ? `/api/skills/search?q=${encodeURIComponent(query)}${activeTag ? `&tag=${encodeURIComponent(activeTag)}` : ""}`
-        : activeTag
-          ? `/api/skills/search?tag=${encodeURIComponent(activeTag)}&limit=20`
-          : "/api/skills/trending?limit=6";
-      fetch(url).then((r) => r.json()).then((d) => { setResults(d.results || []); setTotalResults(d.total ?? null); });
+    const url = query.trim()
+      ? `/api/skills/search?q=${encodeURIComponent(query)}${activeTag ? `&tag=${encodeURIComponent(activeTag)}` : ""}`
+      : activeTag
+        ? `/api/skills/search?tag=${encodeURIComponent(activeTag)}&limit=20`
+        : "/api/skills/trending?limit=6";
+    const t = setTimeout(() => {
+      fetch(url)
+        .then((r) => r.json())
+        .then((d) => {
+          setResults(d.results || []);
+          setTotalResults(d.total ?? null);
+        })
+        .catch(() => setResults([]));
     }, 250);
-    return () => clearTimeout(handle);
+    return () => clearTimeout(t);
   }, [query, activeTag]);
 
-  return (
-    <div className="min-h-screen bg-[#0a0a0b] text-[#f5f3ee]" style={FONT.body}>
-      <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 md:px-12 py-6 bg-black/60 backdrop-blur-xl border-b border-white/5">
-        <span style={FONT.display} className="text-lg tracking-tight text-[#f5f3ee]">SkillForge</span>
-      </nav>
+  const openSkill = (s) => { setSelected(s); setDialogOpen(true); };
 
-      <section className="relative h-screen min-h-[640px] overflow-hidden" style={{ position: "relative", minHeight: "640px", height: "100vh", overflow: "hidden" }}>
-        <HeroScene tier="high" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0a0a0b]" />
-        <div className="relative z-10 h-full flex flex-col items-center justify-center px-6 text-center">
-          <span style={FONT.mono} className="text-[11px] uppercase tracking-[0.4em] text-[#c9a961] mb-6">The agent skill registry</span>
-          <h1 style={FONT.display} className="text-6xl md:text-8xl font-light leading-[0.95] tracking-tight max-w-4xl">
-            Find the right<br /><span className="italic">skill</span> for your agent
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-white/5 bg-black/60 backdrop-blur-xl">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
+          <Link href="/" className="font-serif text-lg tracking-tight">SkillForge</Link>
+          <nav className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm" className="font-mono text-xs">
+              <a href="#browse">Browse</a>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="font-mono text-xs">
+              <a href="https://github.com/Rustys90/skillforge" target="_blank" rel="noopener noreferrer">GitHub</a>
+            </Button>
+          </nav>
+        </div>
+      </header>
+
+      <section className="relative flex min-h-[100svh] items-center justify-center overflow-hidden pt-14">
+        <div className="absolute inset-0">
+          <HeroScene tier={tier === "checking" ? "mid" : tier} />
+        </div>
+        <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center px-6 text-center">
+          <Badge variant="gold" className="mb-6 font-mono text-[10px] uppercase tracking-[0.25em]">
+            The agent skill registry
+          </Badge>
+          <h1 className="font-serif text-4xl font-light leading-[1.1] tracking-tight sm:text-5xl md:text-6xl">
+            Find the right <span className="italic text-primary">skill</span> for your agent
           </h1>
-          <div className="mt-12 w-full max-w-lg">
-            <div className="flex items-center gap-3 border-b border-[#3a372f] pb-4 focus-within:border-[#c9a961] transition-colors">
-              <span style={FONT.mono} className="text-[#6b6860] text-sm">/</span>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="search skills, pdf, xlsx, api client..."
-                style={FONT.mono}
-                className="bg-transparent outline-none flex-1 text-sm placeholder:text-[#5a574f] text-[#f5f3ee]"
-              />
-            
-            <div className="flex flex-wrap gap-2 mt-4 justify-center">
-              {["pdf", "xlsx", "api", "browser", "git", "testing"].map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => setActiveTag((cur) => (cur === tag ? "" : tag))}
-                  style={FONT.mono}
-                  className={`text-[10px] uppercase tracking-wide px-3 py-1 rounded-full border transition-colors ${
-                    activeTag === tag
-                      ? "border-[#c9a961] text-[#c9a961] bg-[#c9a961]/10"
-                      : "border-[#2a2825] text-[#6b6860] hover:border-[#c9a961]/40 hover:text-[#a8a49a]"
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-</div>
+          <p className="mt-5 max-w-md text-sm text-muted-foreground">
+            Indexed from public GitHub repos. Safety-scanned. Install in one command.
+          </p>
+          <div className="relative mt-10 w-full max-w-lg">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="search skills, pdf, xlsx, api client…"
+              className="h-12 border-border/80 bg-background/50 pl-10 font-mono text-sm backdrop-blur focus-visible:ring-primary"
+            />
+          </div>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {TAGS.map((tag) => (
+              <button key={tag} type="button" onClick={() => setActiveTag((cur) => (cur === tag ? "" : tag))}>
+                <Badge
+                  variant={activeTag === tag ? "default" : "outline"}
+                  className={cn("cursor-pointer font-mono text-[10px] uppercase tracking-wide",
+                    activeTag === tag && "bg-primary text-primary-foreground")}
+                >{tag}</Badge>
+              </button>
+            ))}
           </div>
         </div>
       </section>
 
-      <Leaderboard onSelect={setSelectedSkill} />
-
-      <section className="relative px-6 md:px-12 py-28 max-w-6xl mx-auto border-t border-[#1c1b19]">
-        <div className="flex items-end justify-between mb-12">
-          <div>
-            <span style={FONT.mono} className="text-[11px] uppercase tracking-[0.3em] text-[#c9a961]">{query ? "Search" : "Featured"}</span>
-            <h2 style={FONT.display} className="text-4xl md:text-5xl font-light mt-2">{query ? `"${query}"` : "Trending now"}</h2>
+      <section id="browse" className="border-t border-border/40 px-6 py-16">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-8 flex items-baseline justify-between">
+            <h2 className="font-serif text-2xl font-light">{query || activeTag ? "Results" : "Featured"}</h2>
+            {totalResults != null && (
+              <span className="font-mono text-xs text-muted-foreground">{totalResults} total</span>
+            )}
           </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[#1c1b19]">
-          {results.map((s, i) => (
-            <div key={s.id} onClick={() => setSelectedSkill(s)} className="bg-[#0c0c0e] p-8 border border-white/5 hover:border-[#c9a961]/30 transition-all cursor-pointer group rounded-xl">
-              <div className="flex items-start justify-between mb-7">
-                <span style={FONT.mono} className="text-[11px] text-[#4a4740] tracking-widest">{String(i + 1).padStart(2, "0")}</span>
-                <span style={FONT.mono} className="text-xs text-[#c9a961]">{s.stars}★</span>
-              </div>
-              <div style={FONT.display} className="text-3xl font-light mb-2 group-hover:text-[#e8d5a0] transition-colors">{s.name}</div>
-              <div style={FONT.mono} className="text-xs text-[#8a8579] mb-6">{s.owner}/{s.repo}</div>
-              <p style={FONT.body} className="text-[15px] text-[#a8a49a] leading-relaxed font-light mb-7">{s.description}</p>
-            </div>
-          ))}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {results.map((s) => (
+              <Card
+                key={s.id || `${s.owner}-${s.name}`}
+                className="cursor-pointer border-border/50 bg-card/90 transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+                onClick={() => openSkill(s)}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-medium">{s.name}</CardTitle>
+                  <CardDescription className="font-mono text-[11px]">{s.owner}/{s.repo}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="line-clamp-2 text-sm text-muted-foreground">{s.description}</p>
+                  <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><Star className="h-3 w-3 text-primary" /> {s.stars ?? 0}</span>
+                    {s.tags?.[0] && <Badge variant="outline">{s.tags[0]}</Badge>}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
           {results.length === 0 && (
-            <div style={FONT.mono} className="md:col-span-2 bg-[#0a0a0b] text-center py-20 text-[#6b6860] text-sm">No skills match. Try a different query.</div>
+            <p className="py-12 text-center text-sm text-muted-foreground">No skills match.</p>
           )}
         </div>
       </section>
 
-      <footer style={FONT.mono} className="border-t border-[#1c1b19] px-6 md:px-12 py-10 text-center text-[11px] text-[#4a4740] tracking-wide">
-        SkillForge — indexed from public GitHub repositories
+      <Separator className="opacity-40" />
+      <Leaderboard onSelect={openSkill} />
+
+      <footer className="border-t border-border/40 px-6 py-10 text-center">
+        <p className="font-mono text-xs text-muted-foreground">SkillForge · agent skills from public GitHub · MIT</p>
       </footer>
 
-      <SkillModal skill={selectedSkill} onClose={() => setSelectedSkill(null)} />
+      <SkillDialog skill={selected} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   );
 }
