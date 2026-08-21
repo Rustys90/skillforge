@@ -5,6 +5,19 @@
 * { forced-color-adjust: none; }
 html { color-scheme: dark; }
 
+:root {
+  --background: 240 6% 4%;
+  --foreground: 40 20% 95%;
+  --muted: 240 4% 16%;
+  --muted-foreground: 40 5% 55%;
+  --border: 40 6% 16%;
+  --ring: 42 45% 58%;
+  --accent: 42 45% 58%;
+  --accent-foreground: 240 6% 4%;
+  --card: 240 5% 7%;
+  --card-foreground: 40 20% 95%;
+}
+
 @keyframes riseIn {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
@@ -12,4 +25,14 @@ html { color-scheme: dark; }
 @keyframes modalIn {
   from { opacity: 0; transform: scale(0.96) translateY(8px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: hsl(var(--accent) / 0.25);
 }
