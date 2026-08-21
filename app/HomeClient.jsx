@@ -269,7 +269,11 @@ function SkillModal({ skill, onClose }) {
             </div>
           </div>
 
-          <a href={`https://github.com/${skill.owner}/${skill.repo}`} target="_blank" rel="noopener noreferrer"
+          <a href={`/skills/${skill.owner}/${skill.repo}/${(skill.path || "").replace(/\/?SKILL\.md$/i, "")}`}
+             style={FONT.mono} className="inline-flex items-center gap-1.5 mt-7 mr-4 text-[11px] text-[#c9a961] hover:text-[#e8d5a0] transition-colors uppercase tracking-wide">
+          Open skill page →
+        </a>
+        <a href={`https://github.com/${skill.owner}/${skill.repo}`} target="_blank" rel="noopener noreferrer"
              style={FONT.mono} className="inline-flex items-center gap-1.5 mt-7 text-[11px] text-[#6b6860] hover:text-[#c9a961] transition-colors uppercase tracking-wide">
             View source repository →
           </a>
@@ -282,20 +286,26 @@ function SkillModal({ skill, onClose }) {
 export default function HomeClient({ initialTrending = [] }) {
   const tier = useDeviceTier();
   const [query, setQuery] = useState("");
+  const [activeTag, setActiveTag] = useState("");
+  const [totalResults, setTotalResults] = useState(null);
   const [results, setResults] = useState(initialTrending);
   const [selectedSkill, setSelectedSkill] = useState(null);
 
   useEffect(() => {
     const handle = setTimeout(() => {
-      const url = query.trim() ? `/api/skills/search?q=${encodeURIComponent(query)}` : "/api/skills/trending?limit=6";
-      fetch(url).then((r) => r.json()).then((d) => setResults(d.results || []));
+      const url = query.trim()
+        ? `/api/skills/search?q=${encodeURIComponent(query)}${activeTag ? `&tag=${encodeURIComponent(activeTag)}` : ""}`
+        : activeTag
+          ? `/api/skills/search?tag=${encodeURIComponent(activeTag)}&limit=20`
+          : "/api/skills/trending?limit=6";
+      fetch(url).then((r) => r.json()).then((d) => { setResults(d.results || []); setTotalResults(d.total ?? null); });
     }, 250);
     return () => clearTimeout(handle);
-  }, [query]);
+  }, [query, activeTag]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0b] text-[#f5f3ee]" style={FONT.body}>
-      <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 md:px-12 py-6 bg-[#0a0a0b]/70 backdrop-blur-md border-b border-[#1c1b19]">
+      <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 md:px-12 py-6 bg-black/60 backdrop-blur-xl border-b border-white/5">
         <span style={FONT.display} className="text-lg tracking-tight text-[#f5f3ee]">SkillForge</span>
       </nav>
 
@@ -317,7 +327,25 @@ export default function HomeClient({ initialTrending = [] }) {
                 style={FONT.mono}
                 className="bg-transparent outline-none flex-1 text-sm placeholder:text-[#5a574f] text-[#f5f3ee]"
               />
+            
+            <div className="flex flex-wrap gap-2 mt-4 justify-center">
+              {["pdf", "xlsx", "api", "browser", "git", "testing"].map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setActiveTag((cur) => (cur === tag ? "" : tag))}
+                  style={FONT.mono}
+                  className={`text-[10px] uppercase tracking-wide px-3 py-1 rounded-full border transition-colors ${
+                    activeTag === tag
+                      ? "border-[#c9a961] text-[#c9a961] bg-[#c9a961]/10"
+                      : "border-[#2a2825] text-[#6b6860] hover:border-[#c9a961]/40 hover:text-[#a8a49a]"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
             </div>
+</div>
           </div>
         </div>
       </section>
@@ -333,7 +361,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[#1c1b19]">
           {results.map((s, i) => (
-            <div key={s.id} onClick={() => setSelectedSkill(s)} className="bg-[#0a0a0b] p-10 hover:bg-[#0f0e0c] transition-colors cursor-pointer group">
+            <div key={s.id} onClick={() => setSelectedSkill(s)} className="bg-[#0c0c0e] p-8 border border-white/5 hover:border-[#c9a961]/30 transition-all cursor-pointer group rounded-xl">
               <div className="flex items-start justify-between mb-7">
                 <span style={FONT.mono} className="text-[11px] text-[#4a4740] tracking-widest">{String(i + 1).padStart(2, "0")}</span>
                 <span style={FONT.mono} className="text-xs text-[#c9a961]">{s.stars}★</span>
