@@ -1,4 +1,3 @@
-// app/layout.js
 import "./globals.css";
 
 export const metadata = {
@@ -12,14 +11,14 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" style={{ colorScheme: "dark" }}>
+    <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
       <head>
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap"
         />
       </head>
-      <body style={{ margin: 0, background: "#0a0a0b" }}>{children}</body>
+      <body className="min-h-screen bg-background font-sans antialiased">{children}</body>
     </html>
   );
 }
