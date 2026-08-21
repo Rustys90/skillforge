@@ -1,6 +1,6 @@
 {
   "name": "skillforge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Find and install AI agent skills (SKILL.md files) from the SkillForge registry.",
   "type": "module",
   "bin": {
@@ -12,5 +12,10 @@
   },
   "dependencies": {
     "commander": "^12.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rustys90/skillforge"
+  },
+  "homepage": "https://skillforge-jet-chi.vercel.app"
 }
