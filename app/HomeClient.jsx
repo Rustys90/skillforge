@@ -102,7 +102,7 @@ function HeroScene({ tier }) {
       mount.removeChild(renderer.domElement);
     };
   }, [tier]);
-  return <div ref={mountRef} className="absolute inset-0" />;
+  return <div ref={mountRef} className="absolute inset-0" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />;
 }
 
 function StaticFallback() {
@@ -299,7 +299,7 @@ export default function HomeClient({ initialTrending = [] }) {
         <span style={FONT.display} className="text-lg tracking-tight text-[#f5f3ee]">SkillForge</span>
       </nav>
 
-      <section className="relative h-screen min-h-[640px] overflow-hidden">
+      <section className="relative h-screen min-h-[640px] overflow-hidden" style={{ position: "relative", minHeight: "640px", height: "100vh", overflow: "hidden" }}>
         <HeroScene tier="high" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0a0a0b]" />
         <div className="relative z-10 h-full flex flex-col items-center justify-center px-6 text-center">
