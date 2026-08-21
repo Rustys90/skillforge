@@ -6,7 +6,8 @@ export const metadata = {
     default: "SkillForge — the agent skill registry",
     template: "%s | SkillForge",
   },
-  description: "Find, browse, and install AI agent skills (SKILL.md files) from public GitHub repos, in one command.",
+  description:
+    "Find, browse, and install AI agent skills (SKILL.md files) from public GitHub repos, in one command.",
 };
 
 export default function RootLayout({ children }) {
