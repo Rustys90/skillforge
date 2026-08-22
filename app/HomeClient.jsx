@@ -40,47 +40,118 @@ function installCmd(s) {
 }
 
 function SkillDialog({ skill, open, onOpenChange }) {
+  const [full, setFull] = useState(null);
+  const [related, setRelated] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open || !skill) {
+      setFull(null);
+      setRelated([]);
+      return;
+    }
+    const path = skillPath(skill) || skill.path || skill.name;
+    setLoading(true);
+    fetch(
+      `/api/skills/detail?owner=${encodeURIComponent(skill.owner)}&repo=${encodeURIComponent(skill.repo)}&path=${encodeURIComponent(path)}`
+    )
+      .then((r) => r.json())
+      .then((d) => {
+        setFull(d.skill || skill);
+        setRelated(d.related || []);
+      })
+      .catch(() => {
+        setFull(skill);
+        setRelated([]);
+      })
+      .finally(() => setLoading(false));
+  }, [open, skill]);
+
   if (!skill) return null;
-  const cmd = installCmd(skill);
+  const s = full || skill;
+  const cmd = installCmd(s);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg border-white/10 bg-space/95 text-cream sm:rounded-[1.5rem]">
+      <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto border-white/10 bg-space/95 text-cream sm:rounded-[1.5rem]">
         <DialogHeader>
           <DialogTitle className="font-grotesk text-2xl uppercase tracking-wide text-cream">
-            {skill.name}
+            {s.name}
           </DialogTitle>
           <DialogDescription className="font-mono text-xs uppercase text-cream/60">
-            {skill.owner}/{skill.repo} · {skill.stars ?? 0}★
+            {s.owner}/{s.repo} · {s.stars ?? 0}★
+            {s.downloads != null ? ` · ${Number(s.downloads).toLocaleString()} installs` : ""}
           </DialogDescription>
         </DialogHeader>
-        <p className="text-sm leading-relaxed text-cream/80">{skill.description}</p>
-        {skill.tags?.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {skill.tags.map((t) => (
-              <span
-                key={t}
-                className="rounded-full border border-neon/40 bg-neon/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-neon"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
+
+        {loading && !full ? (
+          <p className="font-mono text-xs uppercase text-cream/40">Loading full details…</p>
+        ) : (
+          <>
+            <p className="text-sm leading-relaxed text-cream/80">
+              {s.description || "No description available."}
+            </p>
+
+            {s.tags?.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {s.tags.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-full border border-neon/40 bg-neon/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-neon"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {s.license_spdx_id && (
+              <p className="font-mono text-[10px] uppercase tracking-wide text-cream/40">
+                License · {s.license_spdx_id}
+              </p>
+            )}
+
+            <div className="liquid-glass rounded-[1rem] p-4">
+              <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-neon">
+                <Terminal className="h-3 w-3" /> Install
+              </div>
+              <code className="break-all font-mono text-sm text-cream/90">{cmd}</code>
+            </div>
+
+            {related.length > 0 && (
+              <div>
+                <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-neon">
+                  Related
+                </p>
+                <ul className="space-y-2">
+                  {related.slice(0, 4).map((r) => (
+                    <li key={r.id}>
+                      <Link
+                        href={skillHref(r)}
+                        className="liquid-glass flex items-center justify-between rounded-xl px-3 py-2 transition hover:bg-white/10"
+                      >
+                        <span className="font-grotesk text-xs uppercase tracking-wide text-cream">
+                          {r.name}
+                        </span>
+                        <span className="font-mono text-[10px] text-cream/40">{r.stars}★</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
-        <div className="liquid-glass rounded-[1rem] p-4">
-          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-neon">
-            <Terminal className="h-3 w-3" /> Install
-          </div>
-          <code className="break-all font-mono text-sm text-cream/90">{cmd}</code>
-        </div>
+
         <div className="flex flex-wrap gap-2">
           <Link
-            href={skillHref(skill)}
+            href={skillHref(s)}
             className="inline-flex items-center gap-1 rounded-full bg-neon px-4 py-2 font-grotesk text-sm uppercase tracking-wide text-space transition hover:opacity-90"
           >
-            Open skill <ChevronRight className="h-4 w-4" />
+            Full page <ChevronRight className="h-4 w-4" />
           </Link>
           <a
-            href={`https://github.com/${skill.owner}/${skill.repo}`}
+            href={`https://github.com/${s.owner}/${s.repo}`}
             target="_blank"
             rel="noopener noreferrer"
             className="liquid-glass inline-flex items-center gap-1 rounded-full px-4 py-2 font-mono text-xs uppercase text-cream transition hover:bg-white/10"
@@ -130,6 +201,25 @@ export default function HomeClient({ initialTrending = [] }) {
       .catch(() => setTrending([]))
       .finally(() => setTrendingLoading(false));
   }, [tab]);
+
+  /* Scroll-reveal: mark .reveal nodes when they enter the viewport */
+  useEffect(() => {
+    const nodes = document.querySelectorAll(".reveal");
+    if (!nodes.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-visible");
+            io.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+    );
+    nodes.forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, [results, trending, trendingLoading]);
 
   const openSkill = (s) => {
     setSelected(s);
@@ -265,7 +355,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <section id="browse" className="bg-space py-20 sm:py-24 lg:py-28">
+      <section id="browse" className="reveal bg-space py-20 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
           <div className="mb-12 flex flex-col gap-8 lg:mb-16 lg:flex-row lg:items-end lg:justify-between">
             <h2 className="font-grotesk text-[32px] uppercase leading-[1.05] text-cream sm:text-[44px] md:text-[52px]">
@@ -289,11 +379,11 @@ export default function HomeClient({ initialTrending = [] }) {
           </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {results.map((s) => (
+            {results.map((s, i) => (
               <article
                 key={s.id || `${s.owner}-${s.name}`}
                 onClick={() => openSkill(s)}
-                className="liquid-glass cursor-pointer rounded-[32px] p-[18px] transition hover:bg-white/10"
+                className={`reveal liquid-glass cursor-pointer rounded-[32px] p-[18px] transition duration-300 hover:-translate-y-1 hover:bg-white/10 hover:shadow-lg hover:shadow-neon/10 stagger-${Math.min(i + 1, 6)}`}
               >
                 <div className="flex min-h-[120px] flex-col justify-between rounded-[24px] bg-white/[0.03] p-5">
                   <div>
@@ -335,7 +425,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <section id="trending" className="border-t border-white/5 bg-space py-20">
+      <section id="trending" className="reveal border-t border-white/5 bg-space py-20">
         <div className="mx-auto max-w-3xl px-6 sm:px-10">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -403,7 +493,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <section id="install" className="relative w-full overflow-hidden bg-space">
+      <section id="install" className="reveal relative w-full overflow-hidden bg-space">
         <video className="block h-auto w-full" src={CTA_VIDEO} autoPlay loop muted playsInline />
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute right-0 top-1/2 w-full max-w-3xl -translate-y-1/2 px-6 text-right sm:px-10 lg:pl-[15%] lg:pr-[12%]">
