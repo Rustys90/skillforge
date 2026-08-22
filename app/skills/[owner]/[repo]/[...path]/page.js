@@ -1,9 +1,10 @@
-// app/skills/[owner]/[repo]/[...path]/page.js
 import Link from "next/link";
 import { getSkillDetail, getRelatedSkills } from "../../../../../db/queries.js";
 import { severityFromFlags } from "../../../../../lib/safety-scan.js";
 
 export const dynamic = "force-dynamic";
+
+const SITE_URL = process.env.SITE_URL || "https://skillforge-jet-chi.vercel.app";
 
 function skillHref(s) {
   const path = (s.path || "").replace(/\/?SKILL\.md$/i, "");
@@ -13,6 +14,10 @@ function skillHref(s) {
 function installCmd(s) {
   const path = (s.path || "").replace(/\/?SKILL\.md$/i, "");
   return `npx skillforge add ${s.owner}/${s.repo}/${path || s.name}`;
+}
+
+function cleanPath(path) {
+  return String(path || "").replace(/^\/+/, "").replace(/\/?SKILL\.md$/i, "");
 }
 
 const SEV_STYLE = {
@@ -26,15 +31,31 @@ export async function generateMetadata({ params }) {
   const { owner, repo, path } = await params;
   const pathStr = Array.isArray(path) ? path.join("/") : path;
   const skill = await getSkillDetail(owner, repo, pathStr).catch(() => null);
-  if (!skill) return { title: "Skill not found" };
+  if (!skill) {
+    return { title: "Skill not found", robots: { index: false, follow: false } };
+  }
+  const slug = cleanPath(skill.path);
+  const canonical = `${SITE_URL}/skills/${skill.owner}/${skill.repo}/${slug}`;
+  const description =
+    skill.description ||
+    `Install ${skill.name} from ${skill.owner}/${skill.repo}. Safety-scanned agent skill on SkillForge.`;
   return {
-    title: `${skill.name} — SkillForge`,
-    description: skill.description || `Install ${skill.name} for your agent`,
+    title: `${skill.name} — install for your AI agent`,
+    description,
+    alternates: { canonical },
     openGraph: {
-      title: skill.name,
-      description: skill.description || "",
-      type: "website",
+      type: "article",
+      url: canonical,
+      title: `${skill.name} | SkillForge`,
+      description,
+      siteName: "SkillForge",
     },
+    twitter: {
+      card: "summary",
+      title: `${skill.name} | SkillForge`,
+      description,
+    },
+    robots: { index: true, follow: true },
   };
 }
 
@@ -56,11 +77,37 @@ export default async function SkillPage({ params }) {
   const sev = severityFromFlags(skill.flag_reasons || []);
   const badge = SEV_STYLE[sev] || SEV_STYLE.clean;
   const cmd = installCmd(skill);
+  const slug = cleanPath(skill.path);
+  const pageUrl = `${SITE_URL}/skills/${skill.owner}/${skill.repo}/${slug}`;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: skill.name,
+    description: skill.description || undefined,
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Any",
+    url: pageUrl,
+    author: {
+      "@type": "Organization",
+      name: skill.owner,
+      url: `https://github.com/${skill.owner}`,
+    },
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  };
 
   return (
     <main style={{ padding: "48px 24px", background: "#0a0a0b", color: "#f5f3ee", minHeight: "100vh", fontFamily: "Inter, sans-serif" }}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <Link href="/" style={{ color: "#6b6860", fontSize: 13, textDecoration: "none" }}>← SkillForge</Link>
+        <nav aria-label="Breadcrumb" style={{ fontSize: 13, color: "#6b6860" }}>
+          <Link href="/" style={{ color: "#6b6860", textDecoration: "none" }}>SkillForge</Link>
+          <span aria-hidden="true"> / </span>
+          <span style={{ color: "#c9c5bc" }}>{skill.name}</span>
+        </nav>
         <h1 style={{ fontFamily: "Fraunces, Georgia, serif", fontWeight: 300, fontSize: 36, margin: "16px 0 8px" }}>{skill.name}</h1>
         <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 12, color: "#6b6860" }}>
           {skill.owner}/{skill.repo} · {skill.stars}★ · {(skill.downloads || 0).toLocaleString()} installs
@@ -89,8 +136,8 @@ export default async function SkillPage({ params }) {
           </a>
         </p>
         {related.length > 0 && (
-          <section style={{ marginTop: 40 }}>
-            <h2 style={{ fontFamily: "Fraunces, Georgia, serif", fontWeight: 300, fontSize: 22 }}>Related</h2>
+          <section style={{ marginTop: 40 }} aria-labelledby="related-heading">
+            <h2 id="related-heading" style={{ fontFamily: "Fraunces, Georgia, serif", fontWeight: 300, fontSize: 22 }}>Related</h2>
             <ul style={{ listStyle: "none", padding: 0 }}>
               {related.map((r) => (
                 <li key={r.id} style={{ marginTop: 12 }}>
