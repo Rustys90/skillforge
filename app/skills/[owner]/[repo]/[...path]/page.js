@@ -122,9 +122,22 @@ export default async function SkillPage({ params }) {
             {skill.name}
           </h1>
           <p className="mt-3 font-mono text-xs uppercase tracking-wide text-cream/50">
-            {skill.owner}/{skill.repo} · {skill.stars ?? 0}★ ·{" "}
-            {(skill.downloads || 0).toLocaleString()} installs
+            {skill.owner}/{skill.repo} · {(skill.stars ?? 0).toLocaleString()}★
           </p>
+          <div className="mt-3 flex flex-wrap gap-4 font-mono text-[11px] uppercase tracking-wide text-cream/60">
+            <span>
+              <span className="text-cream/40">Total </span>
+              {(skill.downloads_total ?? skill.downloads ?? 0).toLocaleString()}
+            </span>
+            <span>
+              <span className="text-cream/40">Week </span>
+              {(skill.downloads_weekly ?? 0).toLocaleString()}
+            </span>
+            <span>
+              <span className="text-cream/40">Day </span>
+              {(skill.downloads_daily ?? 0).toLocaleString()}
+            </span>
+          </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span
               className={`rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-wide ${badge.className}`}
