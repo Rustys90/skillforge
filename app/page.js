@@ -1,21 +1,27 @@
-// app/page.js
 import HomeClient from "./HomeClient.jsx";
 import { getTrending } from "../db/queries.js";
 
-// This page depends on live DB data (trending skills) — without this, Next.js
-// may statically pre-render it at build time and serve a frozen cached copy
-// forever, regardless of later env var or database changes.
+const SITE_URL = process.env.SITE_URL || "https://skillforge-jet-chi.vercel.app";
+
 export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "SkillForge — find the right skill for your agent",
-  description: "Search and install AI agent skills (SKILL.md files) for Claude, Cursor, and other coding agents. Indexed from public GitHub repos, updated daily.",
+  description:
+    "Search and install AI agent skills (SKILL.md) for Claude, Cursor, and coding agents. Indexed from public GitHub, safety-scanned, updated daily.",
+  alternates: { canonical: "/" },
   openGraph: {
     title: "SkillForge — the agent skill registry",
     description: "Search and install AI agent skills in one command.",
+    url: SITE_URL,
     type: "website",
+    siteName: "SkillForge",
   },
-  twitter: { card: "summary_large_image" },
+  twitter: {
+    card: "summary_large_image",
+    title: "SkillForge — the agent skill registry",
+    description: "Search and install AI agent skills in one command.",
+  },
 };
 
 export default async function Page() {
