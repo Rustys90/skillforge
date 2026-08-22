@@ -39,14 +39,33 @@ export async function searchSkills({ q, tag, limit = 20, offset = 0 }) {
 
   params.push(limit, offset);
   const rankExpr = q && q.trim()
-    ? `ts_rank(search_vector, plainto_tsquery('english', $1)) DESC, similarity(name, $1) DESC, stars DESC`
-    : `stars DESC`;
+    ? `ts_rank(s.search_vector, plainto_tsquery('english', $1)) DESC, similarity(s.name, $1) DESC, s.stars DESC`
+    : `COALESCE(inst.total, s.downloads, 0) DESC, s.stars DESC`;
+
+  const whereS = where
+    .replace(/\bduplicate_of\b/g, "s.duplicate_of")
+    .replace(/\bsearch_vector\b/g, "s.search_vector")
+    .replace(/\bname\b/g, "s.name")
+    .replace(/\bdescription\b/g, "s.description")
+    .replace(/\btags\b/g, "s.tags");
 
   const { rows } = await query(
-    `SELECT id, name, description, has_real_desc, owner, repo, path, stars,
-            license_spdx_id, tags, repo_updated_at, downloads
-     FROM skills
-     WHERE ${where}
+    `SELECT s.id, s.name, s.description, s.has_real_desc, s.owner, s.repo, s.path, s.stars,
+            s.license_spdx_id, s.tags, s.repo_updated_at,
+            COALESCE(inst.total, s.downloads, 0)::int AS downloads,
+            COALESCE(inst.total, 0)::int AS downloads_total,
+            COALESCE(inst.daily, 0)::int AS downloads_daily,
+            COALESCE(inst.weekly, 0)::int AS downloads_weekly
+     FROM skills s
+     LEFT JOIN (
+       SELECT skill_id,
+              COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE created_at > now() - interval '1 day')::int AS daily,
+              COUNT(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS weekly
+       FROM installs
+       GROUP BY skill_id
+     ) inst ON inst.skill_id = s.id
+     WHERE ${whereS}
      ORDER BY ${rankExpr}
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
@@ -59,7 +78,22 @@ export async function getSkillDetail(owner, repo, path) {
   const norm = normalizeSkillPath(raw);
   const candidates = [...new Set([raw, norm, norm ? `${norm}/SKILL.md` : "SKILL.md"].filter((x) => x !== undefined && x !== null))];
   const { rows } = await query(
-    `SELECT * FROM skills WHERE owner = $1 AND repo = $2 AND path = ANY($3::text[]) LIMIT 1`,
+    `SELECT s.*,
+            COALESCE(inst.total, s.downloads, 0)::int AS downloads,
+            COALESCE(inst.total, 0)::int AS downloads_total,
+            COALESCE(inst.daily, 0)::int AS downloads_daily,
+            COALESCE(inst.weekly, 0)::int AS downloads_weekly
+     FROM skills s
+     LEFT JOIN (
+       SELECT skill_id,
+              COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE created_at > now() - interval '1 day')::int AS daily,
+              COUNT(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS weekly
+       FROM installs
+       GROUP BY skill_id
+     ) inst ON inst.skill_id = s.id
+     WHERE s.owner = $1 AND s.repo = $2 AND s.path = ANY($3::text[])
+     LIMIT 1`,
     [owner, repo, candidates]
   );
   return rows[0] || null;
@@ -79,43 +113,34 @@ export async function getRelatedSkills(tags, excludeId, limit = 3) {
 }
 
 export async function getTrending({ window = "weekly", limit = 100 } = {}) {
-  const windowInterval = {
-    daily: "1 day",
-    weekly: "7 days",
-    hot: "3 days",
-    overall: null,
-  }[window] || "7 days";
-
-  if (windowInterval) {
-    const { rows } = await query(
-      `SELECT s.id, s.name, s.owner, s.repo, s.path, s.stars,
-              COALESCE(i.install_count, 0) AS downloads
-       FROM skills s
-       LEFT JOIN (
-         SELECT skill_id, COUNT(*) AS install_count
-         FROM installs
-         WHERE created_at > now() - $1::interval
-         GROUP BY skill_id
-       ) i ON i.skill_id = s.id
-       WHERE s.duplicate_of IS NULL
-       ORDER BY COALESCE(i.install_count, 0) DESC, s.stars DESC
-       LIMIT $2`,
-      [windowInterval, limit]
-    );
-    return rows;
-  }
+  // Always attach real total / daily / weekly from installs.
+  // Sort key depends on the requested window so tabs differ when data exists.
+  const orderBy = {
+    daily: "COALESCE(inst.daily, 0) DESC, COALESCE(inst.total, 0) DESC, s.stars DESC",
+    weekly: "COALESCE(inst.weekly, 0) DESC, COALESCE(inst.total, 0) DESC, s.stars DESC",
+    hot: "COALESCE(inst.hot, 0) DESC, COALESCE(inst.weekly, 0) DESC, s.stars DESC",
+    overall: "COALESCE(inst.total, s.downloads, 0) DESC, s.stars DESC",
+  }[window] || "COALESCE(inst.weekly, 0) DESC, COALESCE(inst.total, 0) DESC, s.stars DESC";
 
   const { rows } = await query(
-    `SELECT s.id, s.name, s.owner, s.repo, s.path, s.stars,
-            COALESCE(i.install_count, 0) AS downloads
+    `SELECT s.id, s.name, s.owner, s.repo, s.path, s.stars, s.description, s.tags,
+            COALESCE(inst.total, s.downloads, 0)::int AS downloads,
+            COALESCE(inst.total, 0)::int AS downloads_total,
+            COALESCE(inst.daily, 0)::int AS downloads_daily,
+            COALESCE(inst.weekly, 0)::int AS downloads_weekly,
+            COALESCE(inst.hot, 0)::int AS downloads_hot
      FROM skills s
      LEFT JOIN (
-       SELECT skill_id, COUNT(*) AS install_count
+       SELECT skill_id,
+              COUNT(*)::int AS total,
+              COUNT(*) FILTER (WHERE created_at > now() - interval '1 day')::int AS daily,
+              COUNT(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS weekly,
+              COUNT(*) FILTER (WHERE created_at > now() - interval '3 days')::int AS hot
        FROM installs
        GROUP BY skill_id
-     ) i ON i.skill_id = s.id
+     ) inst ON inst.skill_id = s.id
      WHERE s.duplicate_of IS NULL
-     ORDER BY COALESCE(i.install_count, 0) DESC, s.stars DESC
+     ORDER BY ${orderBy}
      LIMIT $1`,
     [limit]
   );
@@ -145,8 +170,22 @@ export async function recordInstall(owner, repo, path, ipHash) {
     `INSERT INTO installs (skill_id, ip_hash, created_at) VALUES ($1, $2, now())`,
     [skill.id, ipHash]
   );
-  await query(`UPDATE skills SET downloads = downloads + 1 WHERE id = $1`, [skill.id]);
+  // Keep denormalized total in sync with installs table
+  await query(
+    `UPDATE skills SET downloads = (SELECT COUNT(*) FROM installs WHERE skill_id = $1) WHERE id = $1`,
+    [skill.id]
+  );
   return true;
+}
+
+/** One-shot: set skills.downloads from real installs counts for every skill. */
+export async function resyncDownloadTotals() {
+  await query(
+    `UPDATE skills s
+     SET downloads = COALESCE((SELECT COUNT(*) FROM installs i WHERE i.skill_id = s.id), 0)`
+  );
+  const { rows } = await query(`SELECT COUNT(*)::int AS n FROM skills WHERE downloads > 0`);
+  return rows[0]?.n ?? 0;
 }
 
 export async function upsertSkill(skill) {
