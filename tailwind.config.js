@@ -1,10 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
-  content: [
-    "./app/**/*.{js,jsx}",
-    "./components/**/*.{js,jsx}",
-  ],
+  content: ["./app/**/*.{js,jsx}", "./components/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
@@ -41,6 +38,9 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        cream: "#EFF4FF",
+        neon: "#6FFF00",
+        space: "#010828",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -50,9 +50,22 @@ module.exports = {
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         serif: ["Fraunces", "Georgia", "serif"],
-        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
+        grotesk: ["Anton", "Impact", "sans-serif"],
+        condiment: ["Condiment", "cursive"],
+      },
+      maxWidth: {
+        content: "1831px",
       },
       keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
         riseIn: {
           from: { opacity: "0", transform: "translateY(24px)" },
           to: { opacity: "1", transform: "translateY(0)" },
@@ -63,6 +76,8 @@ module.exports = {
         },
       },
       animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
         riseIn: "riseIn 0.7s ease-out both",
         modalIn: "modalIn 0.25s ease-out both",
       },
