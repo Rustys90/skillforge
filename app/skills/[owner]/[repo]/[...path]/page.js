@@ -21,10 +21,10 @@ function cleanPath(path) {
 }
 
 const SEV_STYLE = {
-  clean: { label: "Scanned — clean", color: "#6b9b6b" },
-  info: { label: "Scanned — info", color: "#8a8579" },
-  review: { label: "Scanned — review flags", color: "#c9a961" },
-  block: { label: "Scanned — high risk flags", color: "#c66" },
+  clean: { label: "Scanned — clean", className: "text-neon border-neon/40 bg-neon/10" },
+  info: { label: "Scanned — info", className: "text-cream/70 border-white/20 bg-white/5" },
+  review: { label: "Scanned — review flags", className: "text-amber-300 border-amber-300/40 bg-amber-300/10" },
+  block: { label: "Scanned — high risk", className: "text-red-400 border-red-400/40 bg-red-400/10" },
 };
 
 export async function generateMetadata({ params }) {
@@ -66,9 +66,13 @@ export default async function SkillPage({ params }) {
 
   if (!skill) {
     return (
-      <main style={{ padding: 48, background: "#0a0a0b", color: "#f5f3ee", minHeight: "100vh", fontFamily: "Inter, sans-serif" }}>
-        <p>Skill not found.</p>
-        <Link href="/" style={{ color: "#c9a961" }}>← Home</Link>
+      <main className="min-h-screen bg-space px-6 py-16 font-mono text-cream">
+        <div className="mx-auto max-w-2xl">
+          <p className="text-cream/70">Skill not found.</p>
+          <Link href="/" className="mt-4 inline-block text-neon hover:underline">
+            ← Home
+          </Link>
+        </div>
       </main>
     );
   }
@@ -97,52 +101,133 @@ export default async function SkillPage({ params }) {
   };
 
   return (
-    <main style={{ padding: "48px 24px", background: "#0a0a0b", color: "#f5f3ee", minHeight: "100vh", fontFamily: "Inter, sans-serif" }}>
+    <main className="relative min-h-screen bg-space text-cream">
+      <div className="texture-overlay" aria-hidden />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <nav aria-label="Breadcrumb" style={{ fontSize: 13, color: "#6b6860" }}>
-          <Link href="/" style={{ color: "#6b6860", textDecoration: "none" }}>SkillForge</Link>
+
+      <div className="relative z-10 mx-auto max-w-3xl px-6 py-10 sm:px-10 sm:py-16">
+        <nav aria-label="Breadcrumb" className="animate-fade-up font-mono text-xs uppercase tracking-wide text-cream/50">
+          <Link href="/" className="transition hover:text-neon">
+            SkillForge
+          </Link>
           <span aria-hidden="true"> / </span>
-          <span style={{ color: "#c9c5bc" }}>{skill.name}</span>
+          <span className="text-cream/80">{skill.name}</span>
         </nav>
-        <h1 style={{ fontFamily: "Fraunces, Georgia, serif", fontWeight: 300, fontSize: 36, margin: "16px 0 8px" }}>{skill.name}</h1>
-        <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 12, color: "#6b6860" }}>
-          {skill.owner}/{skill.repo} · {skill.stars}★ · {(skill.downloads || 0).toLocaleString()} installs
+
+        <header className="animate-fade-up mt-8" style={{ animationDelay: "60ms" }}>
+          <h1 className="font-grotesk text-4xl uppercase leading-[1.05] tracking-wide text-cream sm:text-5xl md:text-6xl">
+            {skill.name}
+          </h1>
+          <p className="mt-3 font-mono text-xs uppercase tracking-wide text-cream/50">
+            {skill.owner}/{skill.repo} · {skill.stars ?? 0}★ ·{" "}
+            {(skill.downloads || 0).toLocaleString()} installs
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-wide ${badge.className}`}
+            >
+              {badge.label}
+            </span>
+            {!skill.has_real_desc && (
+              <span className="rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 font-mono text-[10px] uppercase text-amber-200">
+                Description generated
+              </span>
+            )}
+            {skill.license_spdx_id && (
+              <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 font-mono text-[10px] uppercase text-cream/60">
+                {skill.license_spdx_id}
+              </span>
+            )}
+          </div>
+        </header>
+
+        <p
+          className="animate-fade-up mt-8 font-mono text-sm leading-relaxed text-cream/80 sm:text-base"
+          style={{ animationDelay: "120ms" }}
+        >
+          {skill.description || "No description available."}
         </p>
-        <p style={{ fontSize: 12, color: badge.color, marginTop: 8 }}>{badge.label}</p>
-        {!skill.has_real_desc && (
-          <p style={{ fontSize: 11, color: "#c9a961", marginTop: 8 }}>Description generated</p>
-        )}
-        <p style={{ color: "#c9c5bc", lineHeight: 1.6, marginTop: 20 }}>{skill.description}</p>
+
         {skill.tags?.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+          <div
+            className="animate-fade-up mt-6 flex flex-wrap gap-2"
+            style={{ animationDelay: "160ms" }}
+          >
             {skill.tags.map((t) => (
-              <Link key={t} href={`/?tag=${encodeURIComponent(t)}`} style={{ fontSize: 11, color: "#c9a961", border: "1px solid #c9a96140", borderRadius: 999, padding: "4px 10px", textDecoration: "none" }}>
+              <Link
+                key={t}
+                href={`/?tag=${encodeURIComponent(t)}`}
+                className="rounded-full border border-neon/40 bg-neon/10 px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-neon transition hover:bg-neon/20"
+              >
                 {t}
               </Link>
             ))}
           </div>
         )}
-        <div style={{ marginTop: 28, padding: 16, border: "1px solid #2a2825", borderRadius: 12, background: "#0f0e0c" }}>
-          <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 10, color: "#c9a961", letterSpacing: "0.2em", marginBottom: 8 }}>INSTALL</div>
-          <code style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 13, color: "#e8d5a0", wordBreak: "break-all" }}>{cmd}</code>
+
+        <div
+          className="liquid-glass animate-fade-up mt-10 rounded-[1.5rem] p-5 sm:p-6"
+          style={{ animationDelay: "200ms" }}
+        >
+          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.25em] text-neon">
+            Install
+          </div>
+          <code className="break-all font-mono text-sm text-cream/90 sm:text-base">{cmd}</code>
         </div>
-        <p style={{ marginTop: 20 }}>
-          <a href={`https://github.com/${skill.owner}/${skill.repo}`} target="_blank" rel="noopener noreferrer" style={{ color: "#6b6860", fontSize: 12 }}>
-            View source repository →
+
+        <div
+          className="animate-fade-up mt-6 flex flex-wrap gap-3"
+          style={{ animationDelay: "240ms" }}
+        >
+          <a
+            href={`https://github.com/${skill.owner}/${skill.repo}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="liquid-glass inline-flex items-center rounded-full px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-cream transition hover:bg-white/10"
+          >
+            View source →
           </a>
-        </p>
+          <Link
+            href="/"
+            className="inline-flex items-center rounded-full bg-neon px-5 py-2.5 font-grotesk text-sm uppercase tracking-wide text-space transition hover:opacity-90"
+          >
+            Browse more
+          </Link>
+        </div>
+
         {related.length > 0 && (
-          <section style={{ marginTop: 40 }} aria-labelledby="related-heading">
-            <h2 id="related-heading" style={{ fontFamily: "Fraunces, Georgia, serif", fontWeight: 300, fontSize: 22 }}>Related</h2>
-            <ul style={{ listStyle: "none", padding: 0 }}>
+          <section
+            className="animate-fade-up mt-16 border-t border-white/10 pt-12"
+            style={{ animationDelay: "280ms" }}
+            aria-labelledby="related-heading"
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-neon">More like this</p>
+            <h2
+              id="related-heading"
+              className="mt-2 font-grotesk text-2xl uppercase tracking-wide text-cream sm:text-3xl"
+            >
+              Related skills
+            </h2>
+            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
               {related.map((r) => (
-                <li key={r.id} style={{ marginTop: 12 }}>
-                  <Link href={skillHref(r)} style={{ color: "#f5f3ee", textDecoration: "none" }}>{r.name}</Link>
-                  <span style={{ color: "#6b6860", fontSize: 12 }}> · {r.stars}★</span>
+                <li key={r.id}>
+                  <Link
+                    href={skillHref(r)}
+                    className="liquid-glass group flex items-center justify-between rounded-[1.25rem] px-5 py-4 transition hover:bg-white/10"
+                  >
+                    <span>
+                      <span className="block font-grotesk text-sm uppercase tracking-wide text-cream group-hover:text-neon">
+                        {r.name}
+                      </span>
+                      <span className="mt-0.5 block font-mono text-[10px] uppercase text-cream/40">
+                        {r.owner}/{r.repo}
+                      </span>
+                    </span>
+                    <span className="font-mono text-xs text-cream/50">{r.stars}★</span>
+                  </Link>
                 </li>
               ))}
             </ul>
