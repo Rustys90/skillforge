@@ -39,6 +39,13 @@ function installCmd(s) {
   return `npx skillforge add ${s.owner}/${s.repo}/${skillPath(s) || s.name}`;
 }
 
+function installStats(s) {
+  const total = Number(s.downloads_total ?? s.downloads ?? 0);
+  const daily = Number(s.downloads_daily ?? 0);
+  const weekly = Number(s.downloads_weekly ?? 0);
+  return { total, daily, weekly };
+}
+
 function SkillDialog({ skill, open, onOpenChange }) {
   const [full, setFull] = useState(null);
   const [related, setRelated] = useState([]);
@@ -79,8 +86,13 @@ function SkillDialog({ skill, open, onOpenChange }) {
             {s.name}
           </DialogTitle>
           <DialogDescription className="font-mono text-xs uppercase text-cream/60">
-            {s.owner}/{s.repo} · {s.stars ?? 0}★
-            {s.downloads != null ? ` · ${Number(s.downloads).toLocaleString()} installs` : ""}
+            {s.owner}/{s.repo} · {(s.stars ?? 0).toLocaleString()}★
+            {" · "}
+            {installStats(s).total.toLocaleString()} total
+            {" · "}
+            {installStats(s).weekly.toLocaleString()} this week
+            {" · "}
+            {installStats(s).daily.toLocaleString()} today
           </DialogDescription>
         </DialogHeader>
 
@@ -398,18 +410,40 @@ export default function HomeClient({ initialTrending = [] }) {
                     {s.description || "Open-source agent skill from GitHub."}
                   </p>
                 </div>
-                <div className="liquid-glass mt-4 flex items-center justify-between rounded-[20px] px-5 py-4">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-wide text-cream/60">Stars</p>
-                    <p className="font-grotesk text-[16px] text-cream">
-                      <Star className="mr-1 inline h-3.5 w-3.5 text-neon" />
-                      {s.stars ?? 0}
-                    </p>
+                <div className="liquid-glass mt-4 flex items-center justify-between gap-3 rounded-[20px] px-5 py-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap gap-4">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-cream/50">Stars</p>
+                        <p className="font-grotesk text-[15px] text-cream">
+                          <Star className="mr-1 inline h-3.5 w-3.5 text-neon" />
+                          {(s.stars ?? 0).toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-cream/50">Total</p>
+                        <p className="font-grotesk text-[15px] text-cream">
+                          {installStats(s).total.toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-cream/50">Week</p>
+                        <p className="font-grotesk text-[15px] text-cream">
+                          {installStats(s).weekly.toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wide text-cream/50">Day</p>
+                        <p className="font-grotesk text-[15px] text-cream">
+                          {installStats(s).daily.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   <button
                     type="button"
                     aria-label={`View ${s.name}`}
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-neon to-emerald-600 shadow-lg shadow-neon/30 transition hover:scale-110"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-neon to-emerald-600 shadow-lg shadow-neon/30 transition hover:scale-110"
                   >
                     <ChevronRight className="h-5 w-5 text-space" />
                   </button>
@@ -479,11 +513,13 @@ export default function HomeClient({ initialTrending = [] }) {
                         {s.owner}/{s.repo}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 font-mono text-xs text-cream/60">
+                    <div className="flex flex-col items-end gap-0.5 font-mono text-[10px] uppercase text-cream/60 sm:flex-row sm:items-center sm:gap-3">
                       <span className="inline-flex items-center gap-1">
-                        <Star className="h-3 w-3 text-neon" /> {s.stars ?? 0}
+                        <Star className="h-3 w-3 text-neon" /> {(s.stars ?? 0).toLocaleString()}
                       </span>
-                      <span>{s.downloads ?? 0} installs</span>
+                      <span title="Total installs">{installStats(s).total} total</span>
+                      <span title="Weekly installs">{installStats(s).weekly} wk</span>
+                      <span title="Daily installs">{installStats(s).daily} day</span>
                     </div>
                   </button>
                 </li>
