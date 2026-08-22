@@ -1,14 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, Star, Terminal, ExternalLink } from "lucide-react";
+import { Search, Star, Terminal, ExternalLink, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -16,112 +11,22 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 
-function useDeviceTier() {
-  const [tier, setTier] = useState("mid");
-  useEffect(() => {
-    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) return setTier("low");
-    const mem = navigator.deviceMemory || 4;
-    const cores = navigator.hardwareConcurrency || 4;
-    if (mem >= 6 && cores >= 6) setTier("high");
-    else if (mem >= 2 && cores >= 2) setTier("mid");
-    else setTier("low");
-  }, []);
-  return tier;
-}
+const HERO_VIDEO =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_045634_e1c98c76-1265-4f5c-882a-4276f2080894.mp4";
+const ABOUT_VIDEO =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_151551_992053d1-3d3e-4b8c-abac-45f22158f411.mp4";
+const CTA_VIDEO =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_055729_72d66327-b59e-4ae9-bb70-de6ccb5ecdb0.mp4";
 
-function HeroScene({ tier }) {
-  const mountRef = useRef(null);
-  useEffect(() => {
-    const mount = mountRef.current;
-    if (!mount) return;
-    const isHigh = tier === "high";
-    const particleCount = isHigh ? 2200 : 900;
+const NAV = [
+  { label: "Browse", href: "#browse" },
+  { label: "Trending", href: "#trending" },
+  { label: "Install", href: "#install" },
+  { label: "GitHub", href: "https://github.com/Rustys90/skillforge", external: true },
+];
 
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x0a0a0b, 0.045);
-    const camera = new THREE.PerspectiveCamera(50, mount.clientWidth / mount.clientHeight, 0.1, 100);
-    camera.position.set(0, 0, 16);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: isHigh, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isHigh ? 2 : 1.4));
-    renderer.setSize(mount.clientWidth, mount.clientHeight);
-    mount.appendChild(renderer.domElement);
-
-    const coreGroup = new THREE.Group();
-    const goldColors = [0xc9a961, 0x9c7d3e, 0xe8d5a0];
-    for (let i = 0; i < 3; i++) {
-      const geo = new THREE.IcosahedronGeometry(3.2 + i * 0.9, 1);
-      const wire = new THREE.WireframeGeometry(geo);
-      const mat = new THREE.LineBasicMaterial({ color: goldColors[i], transparent: true, opacity: 0.22 - i * 0.05 });
-      coreGroup.add(new THREE.LineSegments(wire, mat));
-    }
-    scene.add(coreGroup);
-
-    const positions = new Float32Array(particleCount * 3);
-    for (let i = 0; i < particleCount; i++) {
-      const r = 6 + Math.random() * 10;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.55;
-      positions[i * 3 + 2] = r * Math.cos(phi);
-    }
-    const pGeo = new THREE.BufferGeometry();
-    pGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const pMat = new THREE.PointsMaterial({
-      color: 0xe8d5a0, size: isHigh ? 0.045 : 0.06, transparent: true, opacity: 0.55,
-      blending: THREE.AdditiveBlending, depthWrite: false,
-    });
-    const particles = new THREE.Points(pGeo, pMat);
-    scene.add(particles);
-
-    let raf;
-    let mx = 0, my = 0, tx = 0, ty = 0;
-    const onMove = (e) => {
-      mx = (e.clientX / window.innerWidth - 0.5) * 2;
-      my = (e.clientY / window.innerHeight - 0.5) * 2;
-    };
-    if (isHigh) window.addEventListener("pointermove", onMove);
-
-    const clock = new THREE.Clock();
-    const animate = () => {
-      const t = clock.getElapsedTime();
-      coreGroup.rotation.y = t * 0.09;
-      coreGroup.rotation.x = Math.sin(t * 0.05) * 0.15;
-      particles.rotation.y = -t * 0.03;
-      tx += (mx - tx) * 0.03;
-      ty += (my - ty) * 0.03;
-      camera.position.x = tx * 1.4;
-      camera.position.y = -ty * 0.9;
-      camera.lookAt(0, 0, 0);
-      renderer.render(scene, camera);
-      raf = requestAnimationFrame(animate);
-    };
-    animate();
-
-    const onResize = () => {
-      camera.aspect = mount.clientWidth / mount.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(mount.clientWidth, mount.clientHeight);
-    };
-    window.addEventListener("resize", onResize);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", onResize);
-      if (isHigh) window.removeEventListener("pointermove", onMove);
-      coreGroup.children.forEach((m) => { m.geometry.dispose(); m.material.dispose(); });
-      pGeo.dispose(); pMat.dispose(); renderer.dispose();
-      mount.removeChild(renderer.domElement);
-    };
-  }, [tier]);
-  return <div ref={mountRef} className="absolute inset-0" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />;
-}
-
+const TAGS = ["pdf", "xlsx", "api", "browser", "git", "testing"];
 
 function skillPath(s) {
   return (s.path || "").replace(/\/?SKILL\.md$/i, "");
@@ -133,113 +38,68 @@ function installCmd(s) {
   return `npx skillforge add ${s.owner}/${s.repo}/${skillPath(s) || s.name}`;
 }
 
-function Leaderboard({ onSelect }) {
-  const [tab, setTab] = useState("weekly");
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/skills/trending?window=${tab}&limit=100`)
-      .then((r) => r.json())
-      .then((d) => setItems(d.results || []))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
-  }, [tab]);
-  return (
-    <section className="mx-auto max-w-3xl px-6 py-20">
-      <div className="mb-8 flex items-end justify-between gap-4">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-primary">Leaderboard</p>
-          <h2 className="mt-2 font-serif text-3xl font-light tracking-tight">Trending skills</h2>
-        </div>
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            <TabsTrigger value="daily">Daily</TabsTrigger>
-            <TabsTrigger value="weekly">Weekly</TabsTrigger>
-            <TabsTrigger value="hot">Hot</TabsTrigger>
-            <TabsTrigger value="overall">All</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-      <Card className="border-border/60 bg-card/80 backdrop-blur">
-        <CardContent className="p-0">
-          {loading && <p className="p-8 text-sm text-muted-foreground">Loading…</p>}
-          {!loading && items.length === 0 && (
-            <p className="p-8 text-sm text-muted-foreground">No installs yet — be the first.</p>
-          )}
-          <ul className="divide-y divide-border/50">
-            {items.map((s, i) => (
-              <li key={s.id || `${s.owner}-${s.repo}-${i}`}>
-                <button type="button" onClick={() => onSelect(s)}
-                  className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-white/[0.03]">
-                  <span className="w-8 font-mono text-xs text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{s.name}</div>
-                    <div className="truncate font-mono text-xs text-muted-foreground">{s.owner}/{s.repo}</div>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1"><Star className="h-3 w-3 text-primary" /> {s.stars ?? 0}</span>
-                    <span>{s.downloads ?? 0} installs</span>
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-    </section>
-  );
-}
-
 function SkillDialog({ skill, open, onOpenChange }) {
   if (!skill) return null;
   const cmd = installCmd(skill);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg border-border/60 bg-popover sm:rounded-xl">
+      <DialogContent className="max-w-lg border-white/10 bg-space/95 text-cream sm:rounded-[1.5rem]">
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl font-light">{skill.name}</DialogTitle>
-          <DialogDescription className="font-mono text-xs">
+          <DialogTitle className="font-grotesk text-2xl uppercase tracking-wide text-cream">
+            {skill.name}
+          </DialogTitle>
+          <DialogDescription className="font-mono text-xs uppercase text-cream/60">
             {skill.owner}/{skill.repo} · {skill.stars ?? 0}★
           </DialogDescription>
         </DialogHeader>
-        <p className="text-sm leading-relaxed text-muted-foreground">{skill.description}</p>
+        <p className="text-sm leading-relaxed text-cream/80">{skill.description}</p>
         {skill.tags?.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {skill.tags.map((t) => (
-              <Badge key={t} variant="gold">{t}</Badge>
+              <span
+                key={t}
+                className="rounded-full border border-neon/40 bg-neon/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-neon"
+              >
+                {t}
+              </span>
             ))}
           </div>
         )}
-        <div className="rounded-lg border border-border/60 bg-background/60 p-4">
-          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-primary">
+        <div className="liquid-glass rounded-[1rem] p-4">
+          <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-neon">
             <Terminal className="h-3 w-3" /> Install
           </div>
-          <code className="break-all font-mono text-sm text-primary/90">{cmd}</code>
+          <code className="break-all font-mono text-sm text-cream/90">{cmd}</code>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="default" size="sm">
-            <Link href={skillHref(skill)}>Open skill page</Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <a href={`https://github.com/${skill.owner}/${skill.repo}`} target="_blank" rel="noopener noreferrer">
-              Source <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          </Button>
+          <Link
+            href={skillHref(skill)}
+            className="inline-flex items-center gap-1 rounded-full bg-neon px-4 py-2 font-grotesk text-sm uppercase tracking-wide text-space transition hover:opacity-90"
+          >
+            Open skill <ChevronRight className="h-4 w-4" />
+          </Link>
+          <a
+            href={`https://github.com/${skill.owner}/${skill.repo}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="liquid-glass inline-flex items-center gap-1 rounded-full px-4 py-2 font-mono text-xs uppercase text-cream transition hover:bg-white/10"
+          >
+            Source <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-const TAGS = ["pdf", "xlsx", "api", "browser", "git", "testing"];
-
 export default function HomeClient({ initialTrending = [] }) {
-  const tier = useDeviceTier();
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("");
   const [results, setResults] = useState(initialTrending);
   const [totalResults, setTotalResults] = useState(null);
+  const [tab, setTab] = useState("weekly");
+  const [trending, setTrending] = useState([]);
+  const [trendingLoading, setTrendingLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -261,101 +121,306 @@ export default function HomeClient({ initialTrending = [] }) {
     return () => clearTimeout(t);
   }, [query, activeTag]);
 
-  const openSkill = (s) => { setSelected(s); setDialogOpen(true); };
+  useEffect(() => {
+    setTrendingLoading(true);
+    fetch(`/api/skills/trending?window=${tab}&limit=20`)
+      .then((r) => r.json())
+      .then((d) => setTrending(d.results || []))
+      .catch(() => setTrending([]))
+      .finally(() => setTrendingLoading(false));
+  }, [tab]);
+
+  const openSkill = (s) => {
+    setSelected(s);
+    setDialogOpen(true);
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-white/5 bg-black/60 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <Link href="/" className="font-serif text-lg tracking-tight">SkillForge</Link>
-          <nav className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" className="font-mono text-xs">
-              <a href="#browse">Browse</a>
-            </Button>
-            <Button asChild variant="outline" size="sm" className="font-mono text-xs">
-              <a href="https://github.com/Rustys90/skillforge" target="_blank" rel="noopener noreferrer">GitHub</a>
-            </Button>
-          </nav>
-        </div>
-      </header>
+    <div className="relative min-h-screen bg-space text-cream">
+      <div className="texture-overlay" aria-hidden />
 
-      <section className="relative flex min-h-[100svh] items-center justify-center overflow-hidden pt-14">
-        <div className="absolute inset-0">
-          <HeroScene tier={tier === "checking" ? "mid" : tier} />
-        </div>
-        <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center px-6 text-center">
-          <Badge variant="gold" className="mb-6 font-mono text-[10px] uppercase tracking-[0.25em]">
-            The agent skill registry
-          </Badge>
-          <h1 className="font-serif text-4xl font-light leading-[1.1] tracking-tight sm:text-5xl md:text-6xl">
-            Find the right <span className="italic text-primary">skill</span> for your agent
-          </h1>
-          <p className="mt-5 max-w-md text-sm text-muted-foreground">
-            Indexed from public GitHub repos. Safety-scanned. Install in one command.
-          </p>
-          <div className="relative mt-10 w-full max-w-lg">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="search skills, pdf, xlsx, api client…"
-              className="h-12 border-border/80 bg-background/50 pl-10 font-mono text-sm backdrop-blur focus-visible:ring-primary"
-            />
-          </div>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            {TAGS.map((tag) => (
-              <button key={tag} type="button" onClick={() => setActiveTag((cur) => (cur === tag ? "" : tag))}>
-                <Badge
-                  variant={activeTag === tag ? "default" : "outline"}
-                  className={cn("cursor-pointer font-mono text-[10px] uppercase tracking-wide",
-                    activeTag === tag && "bg-primary text-primary-foreground")}
-                >{tag}</Badge>
-              </button>
-            ))}
+      <section className="relative min-h-screen overflow-hidden rounded-b-[32px]">
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          src={HERO_VIDEO}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="absolute inset-0 bg-space/40" />
+        <div className="relative z-10 mx-auto flex min-h-screen max-w-content flex-col px-6 py-8 sm:px-10 lg:px-16">
+          <header className="flex items-center justify-between">
+            <Link href="/" className="font-grotesk text-[16px] uppercase tracking-wide text-cream">
+              SkillForge
+            </Link>
+            <nav className="liquid-glass hidden rounded-[28px] px-10 py-5 lg:block">
+              <ul className="flex items-center gap-8">
+                {NAV.map((item) => (
+                  <li key={item.label}>
+                    {item.external ? (
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-grotesk text-[13px] uppercase tracking-wide text-cream transition hover:text-neon"
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <a
+                        href={item.href}
+                        className="font-grotesk text-[13px] uppercase tracking-wide text-cream transition hover:text-neon"
+                      >
+                        {item.label}
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            <div className="hidden w-[90px] lg:block" />
+          </header>
+
+          <div className="relative mt-auto flex flex-1 flex-col justify-center pb-16 pt-24 lg:pb-24">
+            <div className="relative max-w-[820px] lg:ml-16">
+              <h1 className="font-grotesk text-[40px] uppercase leading-[1.05] text-cream sm:text-[56px] md:text-[72px] lg:text-[88px]">
+                Find the right
+                <br />
+                skill for your
+                <br />
+                agent
+              </h1>
+              <span className="pointer-events-none absolute -right-2 top-1/2 -translate-y-1/2 -rotate-2 font-condiment text-[22px] text-neon opacity-90 mix-blend-exclusion sm:text-[32px] md:text-[42px] lg:text-[52px]">
+                Agent registry
+              </span>
+            </div>
+
+            <p className="mt-6 max-w-md font-mono text-sm uppercase leading-relaxed text-cream/80 lg:ml-16">
+              Indexed from public GitHub. Safety-scanned. Install in one command.
+            </p>
+
+            <div className="relative mt-10 w-full max-w-lg lg:ml-16">
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cream/50" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="search skills, pdf, xlsx, api…"
+                className="liquid-glass h-14 w-full rounded-[1.25rem] pl-12 pr-4 font-mono text-sm text-cream placeholder:text-cream/40 focus:outline-none focus:ring-1 focus:ring-neon/50"
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2 lg:ml-16">
+              {TAGS.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setActiveTag((cur) => (cur === tag ? "" : tag))}
+                  className={cn(
+                    "rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-wide transition",
+                    activeTag === tag
+                      ? "bg-neon text-space"
+                      : "liquid-glass text-cream hover:bg-white/10"
+                  )}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="browse" className="border-t border-border/40 px-6 py-16">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-8 flex items-baseline justify-between">
-            <h2 className="font-serif text-2xl font-light">{query || activeTag ? "Results" : "Featured"}</h2>
+      <section className="relative min-h-[50vh] overflow-hidden">
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          src={ABOUT_VIDEO}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="absolute inset-0 bg-space/50" />
+        <div className="relative z-10 mx-auto flex min-h-[50vh] max-w-content flex-col justify-center px-6 py-16 sm:px-10 lg:px-16">
+          <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
+            <div className="relative">
+              <h2 className="font-grotesk text-[32px] uppercase leading-[1.05] text-cream sm:text-[44px] md:text-[52px]">
+                Hello!
+                <br />
+                I&apos;m skillforge
+              </h2>
+              <span className="pointer-events-none absolute -bottom-2 right-0 -rotate-1 font-condiment text-[36px] text-neon opacity-90 mix-blend-exclusion sm:text-[48px] md:text-[56px]">
+                Skills
+              </span>
+            </div>
+            <p className="max-w-[280px] font-mono text-[14px] uppercase leading-relaxed text-cream sm:text-[16px]">
+              A living index of agent skills from public GitHub — scanned, ranked, installable in one line.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="browse" className="bg-space py-20 sm:py-24 lg:py-28">
+        <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
+          <div className="mb-12 flex flex-col gap-8 lg:mb-16 lg:flex-row lg:items-end lg:justify-between">
+            <h2 className="font-grotesk text-[32px] uppercase leading-[1.05] text-cream sm:text-[44px] md:text-[52px]">
+              {query || activeTag ? (
+                "Results"
+              ) : (
+                <>
+                  Collection of
+                  <br />
+                  <span className="ml-8 inline-block sm:ml-16 lg:ml-24">
+                    <span className="font-condiment normal-case text-neon">Agent</span> skills
+                  </span>
+                </>
+              )}
+            </h2>
             {totalResults != null && (
-              <span className="font-mono text-xs text-muted-foreground">{totalResults} total</span>
+              <span className="font-mono text-xs uppercase tracking-wide text-cream/50">
+                {totalResults} total
+              </span>
             )}
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {results.map((s) => (
-              <Card
+              <article
                 key={s.id || `${s.owner}-${s.name}`}
-                className="cursor-pointer border-border/50 bg-card/90 transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
                 onClick={() => openSkill(s)}
+                className="liquid-glass cursor-pointer rounded-[32px] p-[18px] transition hover:bg-white/10"
               >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-medium">{s.name}</CardTitle>
-                  <CardDescription className="font-mono text-[11px]">{s.owner}/{s.repo}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="line-clamp-2 text-sm text-muted-foreground">{s.description}</p>
-                  <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1"><Star className="h-3 w-3 text-primary" /> {s.stars ?? 0}</span>
-                    {s.tags?.[0] && <Badge variant="outline">{s.tags[0]}</Badge>}
+                <div className="flex min-h-[120px] flex-col justify-between rounded-[24px] bg-white/[0.03] p-5">
+                  <div>
+                    <h3 className="font-grotesk text-lg uppercase tracking-wide text-cream">
+                      {s.name}
+                    </h3>
+                    <p className="mt-1 font-mono text-[11px] uppercase text-cream/50">
+                      {s.owner}/{s.repo}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                  <p className="mt-3 line-clamp-2 font-mono text-xs leading-relaxed text-cream/70">
+                    {s.description || "Open-source agent skill from GitHub."}
+                  </p>
+                </div>
+                <div className="liquid-glass mt-4 flex items-center justify-between rounded-[20px] px-5 py-4">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-cream/60">Stars</p>
+                    <p className="font-grotesk text-[16px] text-cream">
+                      <Star className="mr-1 inline h-3.5 w-3.5 text-neon" />
+                      {s.stars ?? 0}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={`View ${s.name}`}
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-neon to-emerald-600 shadow-lg shadow-neon/30 transition hover:scale-110"
+                  >
+                    <ChevronRight className="h-5 w-5 text-space" />
+                  </button>
+                </div>
+              </article>
             ))}
           </div>
           {results.length === 0 && (
-            <p className="py-12 text-center text-sm text-muted-foreground">No skills match.</p>
+            <p className="py-12 text-center font-mono text-sm uppercase text-cream/50">
+              No skills match.
+            </p>
           )}
         </div>
       </section>
 
-      <Separator className="opacity-40" />
-      <Leaderboard onSelect={openSkill} />
+      <section id="trending" className="border-t border-white/5 bg-space py-20">
+        <div className="mx-auto max-w-3xl px-6 sm:px-10">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-neon">Leaderboard</p>
+              <h2 className="mt-2 font-grotesk text-3xl uppercase tracking-wide text-cream sm:text-4xl">
+                Trending skills
+              </h2>
+            </div>
+            <div className="liquid-glass flex gap-1 rounded-full p-1">
+              {["daily", "weekly", "hot", "overall"].map((w) => (
+                <button
+                  key={w}
+                  type="button"
+                  onClick={() => setTab(w)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide transition",
+                    tab === w ? "bg-neon text-space" : "text-cream/70 hover:text-cream"
+                  )}
+                >
+                  {w === "overall" ? "All" : w}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <footer className="border-t border-border/40 px-6 py-10 text-center">
-        <p className="font-mono text-xs text-muted-foreground">SkillForge · agent skills from public GitHub · MIT</p>
+          <div className="liquid-glass overflow-hidden rounded-[1.5rem]">
+            {trendingLoading && (
+              <p className="p-8 font-mono text-sm uppercase text-cream/50">Loading…</p>
+            )}
+            {!trendingLoading && trending.length === 0 && (
+              <p className="p-8 font-mono text-sm uppercase text-cream/50">
+                No installs yet — be the first.
+              </p>
+            )}
+            <ul className="divide-y divide-white/10">
+              {trending.map((s, i) => (
+                <li key={s.id || `${s.owner}-${s.repo}-${i}`}>
+                  <button
+                    type="button"
+                    onClick={() => openSkill(s)}
+                    className="flex w-full items-center gap-4 px-5 py-4 text-left transition hover:bg-white/[0.04]"
+                  >
+                    <span className="w-8 font-mono text-xs text-cream/40">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-grotesk uppercase tracking-wide text-cream">
+                        {s.name}
+                      </div>
+                      <div className="truncate font-mono text-xs uppercase text-cream/50">
+                        {s.owner}/{s.repo}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 font-mono text-xs text-cream/60">
+                      <span className="inline-flex items-center gap-1">
+                        <Star className="h-3 w-3 text-neon" /> {s.stars ?? 0}
+                      </span>
+                      <span>{s.downloads ?? 0} installs</span>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="install" className="relative w-full overflow-hidden bg-space">
+        <video className="block h-auto w-full" src={CTA_VIDEO} autoPlay loop muted playsInline />
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute right-0 top-1/2 w-full max-w-3xl -translate-y-1/2 px-6 text-right sm:px-10 lg:pl-[15%] lg:pr-[12%]">
+            <div className="relative inline-block text-left">
+              <span className="pointer-events-none absolute -left-2 -top-4 font-condiment text-[17px] text-neon opacity-90 mix-blend-exclusion sm:-top-8 sm:text-[28px] md:text-[42px] lg:text-[56px]">
+                One command
+              </span>
+              <h2 className="font-grotesk text-[16px] uppercase leading-[1.1] text-cream sm:text-[28px] md:text-[40px] lg:text-[52px]">
+                <span className="mb-4 block sm:mb-6">Install.</span>
+                npx skillforge add
+                <br />
+                owner/repo/skill
+              </h2>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-white/5 px-6 py-10 text-center">
+        <p className="font-mono text-xs uppercase tracking-wide text-cream/40">
+          SkillForge · agent skills from public GitHub · MIT
+        </p>
       </footer>
 
       <SkillDialog skill={selected} open={dialogOpen} onOpenChange={setDialogOpen} />
