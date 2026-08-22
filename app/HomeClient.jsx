@@ -12,12 +12,13 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+/* Cinematic space / abstract — no cartoon characters */
 const HERO_VIDEO =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_045634_e1c98c76-1265-4f5c-882a-4276f2080894.mp4";
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260306_115329_5e00c9c5-4d69-49b7-94c3-9c31c60bb644.mp4";
 const ABOUT_VIDEO =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_151551_992053d1-3d3e-4b8c-abac-45f22158f411.mp4";
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260326_073936_8dd07fdb-4f6b-4220-a3f0-9dedfaab0c88.mp4";
 const CTA_VIDEO =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260331_055729_72d66327-b59e-4ae9-bb70-de6ccb5ecdb0.mp4";
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_125119_8e5ae31c-0021-4396-bc08-f7aebeb877a2.mp4";
 
 const NAV = [
   { label: "Browse", href: "#browse" },
@@ -147,8 +148,11 @@ export default function HomeClient({ initialTrending = [] }) {
           loop
           muted
           playsInline
+          preload="auto"
         />
-        <div className="absolute inset-0 bg-space/40" />
+        {/* Stronger cinematic veil — keeps type readable, hides busy footage */}
+        <div className="absolute inset-0 bg-gradient-to-b from-space/70 via-space/50 to-space/80" />
+        <div className="absolute inset-0 bg-space/30" />
         <div className="relative z-10 mx-auto flex min-h-screen max-w-content flex-col px-6 py-8 sm:px-10 lg:px-16">
           <header className="flex items-center justify-between">
             <Link href="/" className="font-grotesk text-[16px] uppercase tracking-wide text-cream">
@@ -239,8 +243,9 @@ export default function HomeClient({ initialTrending = [] }) {
           loop
           muted
           playsInline
+          preload="metadata"
         />
-        <div className="absolute inset-0 bg-space/50" />
+        <div className="absolute inset-0 bg-gradient-to-r from-space/80 via-space/55 to-space/70" />
         <div className="relative z-10 mx-auto flex min-h-[50vh] max-w-content flex-col justify-center px-6 py-16 sm:px-10 lg:px-16">
           <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
             <div className="relative">
