@@ -25,7 +25,9 @@ export const metadata = {
   publisher: "SkillForge",
   applicationName: "SkillForge",
   category: "technology",
-  alternates: { canonical: "/" },
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -52,7 +54,9 @@ export const metadata = {
       "max-video-preview": -1,
     },
   },
-  other: { "theme-color": "#0a0a0b" },
+  other: {
+    "theme-color": "#010828",
+  },
 };
 
 const jsonLd = {
@@ -76,16 +80,20 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,400&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Anton&family=Condiment&family=Inter:wght@300;400;500&display=swap"
         />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-screen bg-background font-sans antialiased">{children}</body>
+      <body className="min-h-screen bg-space font-mono text-cream antialiased">
+        {children}
+      </body>
     </html>
   );
 }
