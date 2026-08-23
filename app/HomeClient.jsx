@@ -22,6 +22,7 @@ const CTA_VIDEO =
 
 const NAV = [
   { label: "Browse", href: "#browse" },
+  { label: "Trust", href: "#trust" },
   { label: "Trending", href: "#trending" },
   { label: "Install", href: "#install" },
   { label: "GitHub", href: "https://github.com/Rustys90/skillforge", external: true },
@@ -49,21 +50,28 @@ function stableSeed(s) {
   return Math.abs(h >>> 0);
 }
 
-/** Real CLI installs when present; otherwise a stable stars-based estimate so the board isn't all zeros. */
+/** Prefer real CLI installs; otherwise a stable stars-based estimate (labeled in UI). */
 function installStats(s) {
   const realTotal = Number(s.downloads_total ?? s.downloads ?? 0);
   const realDaily = Number(s.downloads_daily ?? 0);
   const realWeekly = Number(s.downloads_weekly ?? 0);
   if (realTotal > 0 || realDaily > 0 || realWeekly > 0) {
-    return { total: realTotal, daily: realDaily, weekly: realWeekly };
+    return { total: realTotal, daily: realDaily, weekly: realWeekly, estimated: false };
   }
   const stars = Math.max(0, Number(s.stars) || 0);
   const seed = stableSeed(s);
-  // Scale with sqrt(stars) so mega-star repos dominate without pure noise
   const total = Math.max(1, Math.floor(Math.sqrt(stars) * 2.8) + (seed % 53));
   const weekly = Math.max(0, Math.floor(total * (0.12 + (seed % 10) / 100)) + (seed % 9));
   const daily = Math.max(0, Math.floor(weekly * (0.2 + (seed % 7) / 50)) + (seed % 4));
-  return { total, daily, weekly };
+  return { total, daily, weekly, estimated: true };
+}
+
+function descText(s) {
+  const d = (s?.description || "").trim();
+  if (!d || /description pending/i.test(d) || /pending crawler/i.test(d)) {
+    return `${s?.name || "Skill"} — open-source agent skill by ${s?.owner || "unknown"}. Safety-scanned on SkillForge.`;
+  }
+  return d;
 }
 
 function SkillDialog({ skill, open, onOpenChange }) {
@@ -109,6 +117,7 @@ function SkillDialog({ skill, open, onOpenChange }) {
             {s.owner}/{s.repo} · {(s.stars ?? 0).toLocaleString()}★
             {" · "}
             {installStats(s).total.toLocaleString()} total
+            {installStats(s).estimated ? " (est.)" : " (live)"}
             {" · "}
             {installStats(s).weekly.toLocaleString()} this week
             {" · "}
@@ -121,7 +130,7 @@ function SkillDialog({ skill, open, onOpenChange }) {
         ) : (
           <>
             <p className="text-sm leading-relaxed text-cream/80">
-              {s.description || "No description available."}
+              {descText(s)}
             </p>
 
             {s.tags?.length > 0 && (
@@ -304,18 +313,23 @@ export default function HomeClient({ initialTrending = [] }) {
 
   return (
     <div className="relative min-h-screen bg-space text-cream">
+      <a href="#browse" className="skip-link">
+        Skip to catalog
+      </a>
       <div className="texture-overlay" aria-hidden />
 
-      <section className="relative min-h-screen overflow-hidden rounded-b-[32px]">
+      <section className="relative min-h-screen overflow-hidden rounded-b-[32px]" aria-label="Hero">
         <video
-          className="absolute inset-0 h-full w-full object-cover"
+          className="motion-safe-video absolute inset-0 h-full w-full object-cover"
           src={HERO_VIDEO}
           autoPlay
           loop
           muted
           playsInline
-          preload="auto"
+          preload="metadata"
+          aria-hidden
         />
+        <div className="motion-reduce-fallback absolute inset-0 bg-gradient-to-br from-space via-[#02103a] to-space" aria-hidden />
         {/* Stronger cinematic veil — keeps type readable, hides busy footage */}
         <div className="absolute inset-0 bg-gradient-to-b from-space/70 via-space/50 to-space/80" />
         <div className="absolute inset-0 bg-space/30" />
@@ -437,14 +451,16 @@ export default function HomeClient({ initialTrending = [] }) {
 
       <section className="relative min-h-[50vh] overflow-hidden">
         <video
-          className="absolute inset-0 h-full w-full object-cover"
+          className="motion-safe-video absolute inset-0 h-full w-full object-cover"
           src={ABOUT_VIDEO}
           autoPlay
           loop
           muted
           playsInline
           preload="metadata"
+          aria-hidden
         />
+        <div className="motion-reduce-fallback absolute inset-0 bg-gradient-to-r from-space via-[#02103a] to-space" aria-hidden />
         <div className="absolute inset-0 bg-gradient-to-r from-space/80 via-space/55 to-space/70" />
         <div className="relative z-10 mx-auto flex min-h-[50vh] max-w-content flex-col justify-center px-6 py-16 sm:px-10 lg:px-16">
           <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
@@ -518,6 +534,25 @@ export default function HomeClient({ initialTrending = [] }) {
             ) : null}
           </form>
 
+          {results.length === 0 && (
+            <div className="liquid-glass mb-10 rounded-[28px] px-8 py-12 text-center" role="status">
+              <p className="font-grotesk text-lg uppercase tracking-wide text-cream">No skills matched</p>
+              <p className="mt-2 font-mono text-xs uppercase text-cream/50">
+                Try another keyword, clear filters, or browse trending below.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  setActiveTag("");
+                }}
+                className="mt-6 rounded-full bg-neon px-5 py-2.5 font-grotesk text-xs uppercase tracking-wide text-space transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/60"
+              >
+                Clear search
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {results.map((s, i) => (
               <article
@@ -535,7 +570,7 @@ export default function HomeClient({ initialTrending = [] }) {
                     </p>
                   </div>
                   <p className="mt-3 line-clamp-2 font-mono text-xs leading-relaxed text-cream/70">
-                    {s.description || "Open-source agent skill from GitHub."}
+                    {descText(s)}
                   </p>
                 </div>
                 <div className="liquid-glass mt-4 flex items-center justify-between gap-3 rounded-[20px] px-5 py-4">
@@ -552,6 +587,11 @@ export default function HomeClient({ initialTrending = [] }) {
                         <p className="text-[10px] uppercase tracking-wide text-cream/50">Total</p>
                         <p className="font-grotesk text-[15px] text-cream">
                           {installStats(s).total.toLocaleString()}
+                          {installStats(s).estimated ? (
+                            <span className="badge-est" title="Estimated from repository stars until real install events accumulate">est.</span>
+                          ) : (
+                            <span className="badge-live" title="Measured from SkillForge install tracking">live</span>
+                          )}
                         </p>
                       </div>
                       <div>
@@ -645,9 +685,11 @@ export default function HomeClient({ initialTrending = [] }) {
                       <span className="inline-flex items-center gap-1">
                         <Star className="h-3 w-3 text-neon" /> {(s.stars ?? 0).toLocaleString()}
                       </span>
-                      <span title="Total installs">{installStats(s).total} total</span>
-                      <span title="Weekly installs">{installStats(s).weekly} wk</span>
-                      <span title="Daily installs">{installStats(s).daily} day</span>
+                      <span title={installStats(s).estimated ? "Estimated from stars" : "Measured installs"}>
+                        {installStats(s).total} total{installStats(s).estimated ? "·est" : ""}
+                      </span>
+                      <span title="Weekly">{installStats(s).weekly} wk</span>
+                      <span title="Daily">{installStats(s).daily} day</span>
                     </div>
                   </button>
                 </li>
@@ -669,8 +711,35 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
+      <section id="trust" className="reveal border-y border-white/5 bg-space py-16 sm:py-20" aria-labelledby="trust-heading">
+        <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
+          <h2 id="trust-heading" className="font-grotesk text-[28px] uppercase leading-tight text-cream sm:text-[40px]">
+            Built for trust
+          </h2>
+          <p className="mt-3 max-w-2xl font-mono text-xs uppercase leading-relaxed text-cream/55">
+            Public GitHub sources only. Content is scanned before publish. Install counts marked{" "}
+            <span className="text-cream/80">live</span> are measured; <span className="text-cream/80">est.</span> means
+            derived from stars until real installs accumulate.
+          </p>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { t: "Safety scan", d: "Flagged skills go to review — not silent publish." },
+              { t: "Open source", d: "Every skill links to its GitHub source repository." },
+              { t: "Honest metrics", d: "Live vs estimated install counts are labeled in the UI." },
+              { t: "One command", d: "npx skillforge add owner/repo/skill — copy and run." },
+            ].map((item) => (
+              <div key={item.t} className="liquid-glass rounded-[24px] p-5">
+                <p className="font-grotesk text-sm uppercase tracking-wide text-neon">{item.t}</p>
+                <p className="mt-2 font-mono text-[11px] uppercase leading-relaxed text-cream/60">{item.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="install" className="reveal relative w-full overflow-hidden bg-space">
-        <video className="block h-auto w-full" src={CTA_VIDEO} autoPlay loop muted playsInline />
+        <video className="motion-safe-video block h-auto w-full" src={CTA_VIDEO} autoPlay loop muted playsInline preload="metadata" aria-hidden />
+        <div className="motion-reduce-fallback min-h-[40vh] w-full bg-gradient-to-r from-space via-[#02103a] to-space" aria-hidden />
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute right-0 top-1/2 w-full max-w-3xl -translate-y-1/2 px-6 text-right sm:px-10 lg:pl-[15%] lg:pr-[12%]">
             <div className="relative inline-block text-left">
@@ -688,9 +757,46 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <footer className="border-t border-white/5 px-6 py-10 text-center">
-        <p className="font-mono text-xs uppercase tracking-wide text-cream/40">
-          SkillForge · agent skills from public GitHub · MIT
+      <footer className="border-t border-white/5 px-6 py-12" role="contentinfo">
+        <div className="mx-auto flex max-w-content flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="font-grotesk text-sm uppercase tracking-wide text-cream">SkillForge</p>
+            <p className="mt-2 max-w-sm font-mono text-[11px] uppercase leading-relaxed text-cream/45">
+              Agent skill registry. Indexed from public GitHub. Safety-scanned. Install in one command.
+            </p>
+          </div>
+          <nav aria-label="Footer">
+            <ul className="flex flex-wrap gap-4 font-mono text-[11px] uppercase tracking-wide text-cream/55">
+              <li>
+                <a href="#browse" className="transition hover:text-neon focus-visible:text-neon">
+                  Catalog
+                </a>
+              </li>
+              <li>
+                <a href="#trust" className="transition hover:text-neon focus-visible:text-neon">
+                  Trust
+                </a>
+              </li>
+              <li>
+                <a href="#install" className="transition hover:text-neon focus-visible:text-neon">
+                  Install
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/Rustys90/skillforge"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition hover:text-neon focus-visible:text-neon"
+                >
+                  Source
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+        <p className="mx-auto mt-10 max-w-content font-mono text-[10px] uppercase tracking-wide text-cream/35">
+          SkillForge · public GitHub skills · MIT-licensed site · metrics labeled live or est.
         </p>
       </footer>
 
