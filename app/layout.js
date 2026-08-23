@@ -9,7 +9,7 @@ export const metadata = {
     template: "%s | SkillForge",
   },
   description:
-    "Find, browse, and install AI agent skills (SKILL.md) from public GitHub. Safety-scanned. One-command install for Claude, Cursor, and coding agents.",
+    "Find, browse, and install AI agent skills (SKILL.md) from public GitHub. Safety-scanned. Honest install metrics. One-command install for Claude, Cursor, and coding agents.",
   keywords: [
     "AI agent skills",
     "SKILL.md",
@@ -19,15 +19,14 @@ export const metadata = {
     "SkillForge",
     "install agent skills",
     "GitHub skills",
+    "npx skillforge",
   ],
   authors: [{ name: "SkillForge" }],
   creator: "SkillForge",
   publisher: "SkillForge",
   applicationName: "SkillForge",
   category: "technology",
-  alternates: {
-    canonical: "/",
-  },
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -35,13 +34,13 @@ export const metadata = {
     siteName: "SkillForge",
     title: "SkillForge — the agent skill registry",
     description:
-      "Search and install AI agent skills from public GitHub repos. Safety-scanned. One command.",
+      "Search and install AI agent skills from public GitHub. Safety-scanned. Live vs estimated metrics labeled.",
   },
   twitter: {
     card: "summary_large_image",
     title: "SkillForge — the agent skill registry",
     description:
-      "Search and install AI agent skills from public GitHub repos. Safety-scanned. One command.",
+      "Search and install AI agent skills from public GitHub. Safety-scanned. One command.",
   },
   robots: {
     index: true,
@@ -54,12 +53,10 @@ export const metadata = {
       "max-video-preview": -1,
     },
   },
-  other: {
-    "theme-color": "#010828",
-  },
+  other: { "theme-color": "#010828" },
 };
 
-const jsonLd = {
+const websiteLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
   name: "SkillForge",
@@ -76,6 +73,27 @@ const jsonLd = {
   },
 };
 
+const orgLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "SkillForge",
+  url: SITE_URL,
+  description: "Public registry of AI agent skills indexed from GitHub.",
+  sameAs: ["https://github.com/Rustys90/skillforge"],
+};
+
+const softwareLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "SkillForge",
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Any",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  description:
+    "Browse and install agent skills with npx skillforge add. Safety-scanned catalog from public GitHub.",
+  url: SITE_URL,
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
@@ -84,16 +102,22 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Anton&family=Condiment&family=Inter:wght@300;400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Anton&family=Condiment&family=Inter:wght@300;400;500;600&display=swap"
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }}
         />
       </head>
-      <body className="min-h-screen bg-space font-mono text-cream antialiased">
-        {children}
-      </body>
+      <body className="min-h-screen bg-space antialiased">{children}</body>
     </html>
   );
 }
