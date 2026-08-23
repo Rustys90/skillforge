@@ -18,9 +18,18 @@ export const maxDuration = 60;
 
 const BATCH_SIZE = parseInt(process.env.CRAWL_BATCH_SIZE || "25", 10);
 
+function authorizedCron(request) {
+  const expected = process.env.CRON_SECRET || "";
+  if (!expected) return false;
+  const header = request.headers.get("x-cron-secret") || "";
+  const auth = request.headers.get("authorization") || "";
+  const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  // timing-safe-ish length check + equality
+  return header === expected || bearer === expected;
+}
+
 export async function GET(request) {
-  const secret = request.headers.get("x-cron-secret");
-  if (secret !== process.env.CRON_SECRET) {
+  if (!authorizedCron(request)) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
