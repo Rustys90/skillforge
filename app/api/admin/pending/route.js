@@ -1,6 +1,12 @@
 // app/api/admin/pending/route.js
 import { listPending, reviewPending } from "../../../../db/queries.js";
-import { isAdmin, createAdminToken, adminCookieHeader } from "../../../../lib/admin-auth.js";
+import {
+  isAdmin,
+  createAdminToken,
+  adminCookieHeader,
+  checkAdminPassword,
+} from "../../../../lib/admin-auth.js";
+import { rateLimit } from "../../../../lib/rate-limit.js";
 
 export async function GET(request) {
   if (!isAdmin(request)) return Response.json({ error: "unauthorized" }, { status: 401 });
@@ -21,8 +27,12 @@ export async function POST(request) {
     return Response.json({ error: "invalid request" }, { status: 400 });
   }
 
+  // Login: password only, no id
   if (body?.password && !body?.id) {
-    if (body.password !== process.env.ADMIN_PASSWORD) {
+    const rl = await rateLimit(request, "admin-login");
+    if (!rl.ok) return Response.json({ error: "rate limited" }, { status: 429 });
+
+    if (!checkAdminPassword(body.password)) {
       return Response.json({ error: "unauthorized" }, { status: 401 });
     }
     const token = createAdminToken();
@@ -31,11 +41,16 @@ export async function POST(request) {
       headers: {
         "content-type": "application/json",
         "set-cookie": adminCookieHeader(token),
+        "cache-control": "no-store",
       },
     });
   }
 
   if (!isAdmin(request)) return Response.json({ error: "unauthorized" }, { status: 401 });
+
+  const rl = await rateLimit(request, "admin");
+  if (!rl.ok) return Response.json({ error: "rate limited" }, { status: 429 });
+
   if (!body?.id || !["approved", "rejected"].includes(body.decision)) {
     return Response.json({ error: "invalid request" }, { status: 400 });
   }
