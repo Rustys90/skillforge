@@ -4,6 +4,7 @@
 
 import { getSkillDetail, getRelatedSkills } from "../../../../db/queries.js";
 import { rateLimit } from "../../../../lib/rate-limit.js";
+import { enrichSkillWithHf } from "../../../../lib/hf-downloads.js";
 
 export async function GET(request) {
   const rl = await rateLimit(request, "detail");
@@ -23,7 +24,8 @@ export async function GET(request) {
     if (!skill) return Response.json({ error: "not found" }, { status: 404 });
 
     const related = await getRelatedSkills(skill.tags, skill.id);
-    return Response.json({ skill, related });
+    const enriched = await enrichSkillWithHf(skill);
+    return Response.json({ skill: enriched, related });
   } catch (err) {
     console.error("[api/detail] failed:", err.message);
     return Response.json({ error: "failed to load skill" }, { status: 500 });
