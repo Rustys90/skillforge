@@ -122,6 +122,13 @@ function SkillDialog({ skill, open, onOpenChange }) {
                 License · {s.license_spdx_id}
               </p>
             )}
+            {s.hf_downloads != null && (
+              <p className="font-mono text-[10px] uppercase tracking-wide text-cream/50">
+                Hugging Face · {Number(s.hf_downloads).toLocaleString()} downloads
+                {s.hf_model_id ? ` · ${s.hf_model_id}` : ""}
+                {s.hf_likes != null ? ` · ${Number(s.hf_likes).toLocaleString()} likes` : ""}
+              </p>
+            )}
 
             <div className="liquid-glass rounded-[1rem] p-4">
               <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-neon">
