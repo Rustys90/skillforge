@@ -9,34 +9,37 @@ export function middleware(request) {
   res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   res.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
   );
   res.headers.set("X-DNS-Prefetch-Control", "on");
-  // HSTS is also set by Vercel; reinforce
   res.headers.set(
     "Strict-Transport-Security",
     "max-age=63072000; includeSubDomains; preload"
   );
+  // Cross-origin isolation helpers (safe for this app)
+  res.headers.set("X-Permitted-Cross-Domain-Policies", "none");
+  res.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  res.headers.set("Cross-Origin-Resource-Policy", "same-site");
 
-  // CSP: allow self, Google Fonts, CloudFront video CDN used by Orbis hero
+  // Tightened CSP: no unsafe-eval. unsafe-inline kept for Next.js inline styles/scripts bootstrap.
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https://*.cloudfront.net https:",
-    "connect-src 'self' https://huggingface.co https://*.supabase.co https:",
+    "connect-src 'self' https://huggingface.co https://*.supabase.co wss://*.supabase.co https:",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
     "object-src 'none'",
+    "upgrade-insecure-requests",
   ].join("; ");
   res.headers.set("Content-Security-Policy", csp);
 
-  // Never cache authenticated admin paths
   if (request.nextUrl.pathname.startsWith("/api/admin")) {
-    res.headers.set("Cache-Control", "no-store");
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
   }
 
   return res;
