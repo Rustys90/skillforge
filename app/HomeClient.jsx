@@ -184,6 +184,9 @@ export default function HomeClient({ initialTrending = [] }) {
   const [tab, setTab] = useState("weekly");
   const [trending, setTrending] = useState([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
+  const [trendingLoadingMore, setTrendingLoadingMore] = useState(false);
+  const [trendingHasMore, setTrendingHasMore] = useState(false);
+  const TRENDING_PAGE = 20;
   const [selected, setSelected] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -207,12 +210,46 @@ export default function HomeClient({ initialTrending = [] }) {
 
   useEffect(() => {
     setTrendingLoading(true);
-    fetch(`/api/skills/trending?window=${tab}&limit=20`)
+    setTrendingHasMore(false);
+    fetch(`/api/skills/trending?window=${tab}&limit=${TRENDING_PAGE}&offset=0`)
       .then((r) => r.json())
-      .then((d) => setTrending(d.results || []))
-      .catch(() => setTrending([]))
+      .then((d) => {
+        setTrending(d.results || []);
+        setTrendingHasMore(Boolean(d.hasMore));
+      })
+      .catch(() => {
+        setTrending([]);
+        setTrendingHasMore(false);
+      })
       .finally(() => setTrendingLoading(false));
   }, [tab]);
+
+  const loadMoreTrending = () => {
+    if (trendingLoadingMore || !trendingHasMore) return;
+    setTrendingLoadingMore(true);
+    fetch(
+      `/api/skills/trending?window=${tab}&limit=${TRENDING_PAGE}&offset=${trending.length}`
+    )
+      .then((r) => r.json())
+      .then((d) => {
+        const next = d.results || [];
+        setTrending((prev) => {
+          const seen = new Set(prev.map((x) => x.id || `${x.owner}/${x.repo}/${x.path}`));
+          const merged = [...prev];
+          for (const s of next) {
+            const k = s.id || `${s.owner}/${s.repo}/${s.path}`;
+            if (!seen.has(k)) {
+              seen.add(k);
+              merged.push(s);
+            }
+          }
+          return merged;
+        });
+        setTrendingHasMore(Boolean(d.hasMore) && next.length > 0);
+      })
+      .catch(() => setTrendingHasMore(false))
+      .finally(() => setTrendingLoadingMore(false));
+  };
 
   /* Scroll-reveal: mark .reveal nodes when they enter the viewport */
   useEffect(() => {
@@ -525,6 +562,18 @@ export default function HomeClient({ initialTrending = [] }) {
                 </li>
               ))}
             </ul>
+            {!trendingLoading && trendingHasMore && (
+              <div className="border-t border-white/10 p-4 text-center">
+                <button
+                  type="button"
+                  onClick={loadMoreTrending}
+                  disabled={trendingLoadingMore}
+                  className="liquid-glass rounded-full px-6 py-2.5 font-mono text-xs uppercase tracking-wide text-cream transition hover:bg-white/10 disabled:opacity-50"
+                >
+                  {trendingLoadingMore ? "Loading…" : "Load more"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>
