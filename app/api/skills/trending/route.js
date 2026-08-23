@@ -8,11 +8,17 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const window = searchParams.get("window") || "weekly";
-  const limit = Math.min(parseInt(searchParams.get("limit") || "100", 10), 100);
+  const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10) || 20, 100);
+  const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10) || 0, 0);
 
   try {
-    const results = await getTrending({ window, limit });
-    return Response.json({ results });
+    const results = await getTrending({ window, limit, offset });
+    return Response.json({
+      results,
+      limit,
+      offset,
+      hasMore: results.length === limit,
+    });
   } catch (err) {
     console.error("[api/trending] failed:", err.message);
     return Response.json({ error: "failed to load trending" }, { status: 500 });
