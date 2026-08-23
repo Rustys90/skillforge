@@ -1,3 +1,18 @@
+/*
+  SkillForge — anti-slop decision sheet
+  SUBJECT   Public agent-skill registry: find, scan, install SKILL.md in one command.
+  GROUND    Ops console in deep space — phosphor status, glass bezels, mono telemetry.
+  PALETTE   space #010828 (cool navy), cream #EFF4FF, neon #6FFF00 (phosphor),
+            glass rgba(255,255,255,0.01), dim cream/45 meta. Neutral is cool, not warm beige.
+  TYPE      Display = Anton (block index headings). Accent = Condiment (one signature word).
+            Body/UI = system ui-monospace first (telemetry), not Inter-as-brand.
+  SPACE     Intra-component: 8 / 12 / 16. Section rhythm: 64 / 80 / 112. Different registers.
+  SHAPE     Radius 24px instrument bezels. Elevation = tonal glass only (no soft marketing shadows).
+  MOTION    Purposeful only: scroll-reveal (content in), :active press (100ms), skeleton (loading),
+            catalog stagger (scan order). Band 100–400ms. Reduced-motion disables the rest.
+  SIGNATURE Liquid-glass panels + neon phosphor on #010828 — CRT instrument in vacuum.
+*/
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,6 +23,9 @@
   --neon: #6fff00;
   --glass: rgba(255, 255, 255, 0.01);
   --focus: rgba(111, 255, 0, 0.65);
+  --radius-bezel: 24px;
+  --duration-press: 100ms;
+  --duration-reveal: 400ms;
 }
 
 html {
@@ -25,13 +43,14 @@ body {
   margin: 0;
   background: var(--space);
   color: var(--cream);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  /* Utility stack — telemetry, not marketing Inter */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   min-height: 100vh;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  caret-color: var(--neon);
 }
 
-/* Custom scrollbar — intentional, not browser default only */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(111, 255, 0, 0.35) rgba(1, 8, 40, 0.8);
@@ -51,18 +70,37 @@ body {
 *::-webkit-scrollbar-thumb:hover {
   background: rgba(111, 255, 0, 0.45);
 }
+*::-webkit-scrollbar-thumb:active {
+  background: rgba(111, 255, 0, 0.6);
+}
 
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
+/* Press receipt — strongest anti-inert signal */
+button:active:not(:disabled),
+[role="button"]:active,
+a.liquid-glass:active,
+.pressable:active {
+  transform: scale(0.97);
+  transition: transform var(--duration-press) ease-out;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .font-grotesk {
-  font-family: Anton, Impact, sans-serif;
+  font-family: Anton, "Arial Black", Impact, sans-serif;
   letter-spacing: 0.02em;
 }
 .font-condiment {
-  font-family: Condiment, cursive;
+  font-family: Condiment, "Segoe Script", cursive;
 }
 .font-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -134,7 +172,7 @@ body {
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -152,19 +190,19 @@ body {
 }
 
 .animate-fade-up {
-  animation: fade-up 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: fade-up var(--duration-reveal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-fade-in {
-  animation: fade-in 0.5s ease both;
+  animation: fade-in 0.35s ease both;
 }
 
 .reveal {
   opacity: 0;
-  transform: translateY(22px);
+  transform: translateY(16px);
   transition:
-    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity var(--duration-reveal) cubic-bezier(0.22, 1, 0.36, 1),
+    transform var(--duration-reveal) cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reveal.is-visible {
@@ -172,23 +210,31 @@ body {
   transform: translateY(0);
 }
 
-.stagger-1 { transition-delay: 0.05s; }
-.stagger-2 { transition-delay: 0.1s; }
-.stagger-3 { transition-delay: 0.15s; }
-.stagger-4 { transition-delay: 0.2s; }
-.stagger-5 { transition-delay: 0.25s; }
-.stagger-6 { transition-delay: 0.3s; }
+.stagger-1 { transition-delay: 0.04s; }
+.stagger-2 { transition-delay: 0.08s; }
+.stagger-3 { transition-delay: 0.12s; }
+.stagger-4 { transition-delay: 0.16s; }
+.stagger-5 { transition-delay: 0.2s; }
+.stagger-6 { transition-delay: 0.24s; }
 
-/* Skeleton pulse for loading */
 .skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 75%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
   background-size: 200% 100%;
-  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+  animation: skeleton-shimmer 1.1s ease-in-out infinite;
   border-radius: 12px;
 }
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .skip-link {
@@ -199,7 +245,6 @@ body {
   padding: 0.6rem 1rem;
   background: var(--neon);
   color: var(--space);
-  font-family: ui-monospace, monospace;
   font-size: 12px;
   text-transform: uppercase;
   border-radius: 999px;
@@ -207,6 +252,9 @@ body {
 }
 .skip-link:focus {
   top: 1rem;
+}
+.skip-link:active {
+  transform: scale(0.97);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -224,6 +272,11 @@ body {
   }
   .motion-reduce-fallback {
     display: block !important;
+  }
+  button:active:not(:disabled),
+  [role="button"]:active,
+  .pressable:active {
+    transform: none;
   }
 }
 
@@ -248,7 +301,6 @@ body {
   color: #eff4ff;
 }
 
-/* Trusted badge chip */
 .badge-est {
   font-size: 9px;
   letter-spacing: 0.06em;
@@ -270,4 +322,9 @@ body {
   padding: 0.1rem 0.4rem;
   margin-left: 0.35rem;
   vertical-align: middle;
+}
+
+/* Catalog status live region */
+.status-live {
+  min-height: 1.25rem;
 }
