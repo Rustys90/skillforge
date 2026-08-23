@@ -7,6 +7,7 @@ import {
   checkAdminPassword,
 } from "../../../../lib/admin-auth.js";
 import { rateLimit } from "../../../../lib/rate-limit.js";
+import { isAllowedOrigin } from "../../../../lib/origin.js";
 
 export async function GET(request) {
   if (!isAdmin(request)) {
@@ -22,6 +23,9 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  if (!isAllowedOrigin(request)) {
+    return Response.json({ error: "forbidden origin" }, { status: 403 });
+  }
   let body;
   try {
     body = await request.json();
