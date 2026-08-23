@@ -370,15 +370,49 @@ export default function HomeClient({ initialTrending = [] }) {
               Indexed from public GitHub. Safety-scanned. Install in one command.
             </p>
 
-            <div className="relative mt-10 w-full max-w-lg lg:ml-16">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cream/50" />
+            <form
+              role="search"
+              aria-label="Search agent skills"
+              className="relative mt-10 w-full max-w-xl lg:ml-16"
+              onSubmit={(e) => {
+                e.preventDefault();
+                document.getElementById("browse")?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              <label htmlFor="skill-search" className="sr-only">
+                Search skills by name, tag, or description
+              </label>
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cream/45" aria-hidden />
               <input
+                id="skill-search"
+                name="q"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="search skills, pdf, xlsx, api…"
-                className="liquid-glass h-14 w-full rounded-[1.25rem] pl-12 pr-4 font-mono text-sm text-cream placeholder:text-cream/40 focus:outline-none focus:ring-1 focus:ring-neon/50"
+                placeholder="Search skills — pdf, whisper, deploy, api…"
+                autoComplete="off"
+                spellCheck={false}
+                className="liquid-glass h-14 w-full rounded-[1.25rem] border border-white/10 bg-space/40 pl-12 pr-24 font-mono text-sm text-cream caret-neon placeholder:text-cream/35 transition focus:border-neon/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-neon/60 active:scale-[0.997]"
               />
-            </div>
+              <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                {query ? (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => setQuery("")}
+                    className="rounded-full px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wide text-cream/50 transition hover:bg-white/10 hover:text-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/50"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+                <button
+                  type="submit"
+                  className="rounded-full bg-neon px-3.5 py-2 font-grotesk text-[11px] uppercase tracking-wide text-space transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream/40 active:translate-y-px"
+                >
+                  Search
+                </button>
+              </div>
+            </form>
+
 
             <div className="mt-4 flex flex-wrap gap-2 lg:ml-16">
               {TAGS.map((tag) => (
@@ -453,6 +487,36 @@ export default function HomeClient({ initialTrending = [] }) {
               </span>
             )}
           </div>
+
+          <form
+            role="search"
+            aria-label="Filter skills in catalog"
+            className="mb-10 max-w-xl"
+            onSubmit={(e) => e.preventDefault()}
+          >
+            <label htmlFor="browse-search" className="sr-only">
+              Filter catalog
+            </label>
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cream/40"
+                aria-hidden
+              />
+              <input
+                id="browse-search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Filter by name, owner, or keyword…"
+                autoComplete="off"
+                className="liquid-glass h-12 w-full rounded-2xl border border-white/10 pl-10 pr-4 font-mono text-sm text-cream caret-neon placeholder:text-cream/35 transition focus:border-neon/35 focus:outline-none focus-visible:ring-2 focus-visible:ring-neon/50"
+              />
+            </div>
+            {totalResults != null && query.trim() ? (
+              <p className="mt-2 font-mono text-[10px] uppercase tracking-wide text-cream/45">
+                {totalResults.toLocaleString()} match{totalResults === 1 ? "" : "es"}
+              </p>
+            ) : null}
+          </form>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {results.map((s, i) => (
