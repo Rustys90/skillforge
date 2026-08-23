@@ -126,7 +126,16 @@ function SkillDialog({ skill, open, onOpenChange }) {
         </DialogHeader>
 
         {loading && !full ? (
-          <p className="font-mono text-xs uppercase text-cream/40">Loading full details…</p>
+          <div className="space-y-3" aria-busy="true" aria-label="Loading skill details">
+            <div className="skeleton h-4 w-2/3 max-w-[12rem]" />
+            <div className="skeleton h-3 w-full" />
+            <div className="skeleton h-3 w-5/6" />
+            <div className="skeleton h-3 w-4/6" />
+            <div className="mt-4 flex gap-2">
+              <div className="skeleton h-9 w-28 rounded-full" />
+              <div className="skeleton h-9 w-24 rounded-full" />
+            </div>
+          </div>
         ) : (
           <>
             <p className="text-sm leading-relaxed text-cream/80">
@@ -216,6 +225,7 @@ export default function HomeClient({ initialTrending = [] }) {
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("");
   const [results, setResults] = useState(initialTrending);
+  const [catalogLoading, setCatalogLoading] = useState(false);
   const [totalResults, setTotalResults] = useState(null);
   const [tab, setTab] = useState("weekly");
   const [trending, setTrending] = useState([]);
@@ -233,13 +243,15 @@ export default function HomeClient({ initialTrending = [] }) {
         ? `/api/skills/search?tag=${encodeURIComponent(activeTag)}&limit=20`
         : "/api/skills/trending?limit=6";
     const t = setTimeout(() => {
+      setCatalogLoading(true);
       fetch(url)
         .then((r) => r.json())
         .then((d) => {
           setResults(d.results || []);
           setTotalResults(d.total ?? null);
         })
-        .catch(() => setResults([]));
+        .catch(() => setResults([]))
+        .finally(() => setCatalogLoading(false));
     }, 250);
     return () => clearTimeout(t);
   }, [query, activeTag]);
@@ -553,7 +565,38 @@ export default function HomeClient({ initialTrending = [] }) {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {catalogLoading && (
+            <div
+              className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+              aria-busy="true"
+              aria-label="Loading skills"
+            >
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={`sk-${i}`} className="liquid-glass rounded-[32px] p-[18px]">
+                  <div className="flex min-h-[120px] flex-col justify-between rounded-[24px] bg-white/[0.03] p-5">
+                    <div>
+                      <div className="skeleton h-5 w-2/5 max-w-[9rem]" />
+                      <div className="skeleton mt-2 h-3 w-1/3 max-w-[6rem]" />
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      <div className="skeleton h-3 w-full" />
+                      <div className="skeleton h-3 w-4/5" />
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-4 rounded-[20px] px-2 py-4">
+                    <div className="skeleton h-8 w-16" />
+                    <div className="skeleton h-8 w-16" />
+                    <div className="skeleton h-8 w-16" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div
+            className={`grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 ${catalogLoading ? "hidden" : ""}`}
+            aria-busy={catalogLoading}
+          >
             {results.map((s, i) => (
               <article
                 key={s.id || `${s.owner}-${s.name}`}
@@ -619,10 +662,23 @@ export default function HomeClient({ initialTrending = [] }) {
               </article>
             ))}
           </div>
-          {results.length === 0 && (
-            <p className="py-12 text-center font-mono text-sm uppercase text-cream/50">
-              No skills match.
-            </p>
+          {!catalogLoading && results.length === 0 && (
+            <div className="liquid-glass mt-4 rounded-[28px] px-8 py-12 text-center" role="status">
+              <p className="font-grotesk text-lg uppercase tracking-wide text-cream">No skills matched</p>
+              <p className="mt-2 font-mono text-xs uppercase text-cream/50">
+                Try another keyword or clear filters.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  setActiveTag("");
+                }}
+                className="mt-6 rounded-full bg-neon px-5 py-2.5 font-grotesk text-xs uppercase tracking-wide text-space transition hover:opacity-90"
+              >
+                Clear search
+              </button>
+            </div>
           )}
         </div>
       </section>
@@ -655,7 +711,18 @@ export default function HomeClient({ initialTrending = [] }) {
 
           <div className="liquid-glass overflow-hidden rounded-[1.5rem]">
             {trendingLoading && (
-              <p className="p-8 font-mono text-sm uppercase text-cream/50">Loading…</p>
+              <ul className="divide-y divide-white/5" aria-busy="true" aria-label="Loading leaderboard">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <li key={`ts-${i}`} className="flex items-center gap-4 px-5 py-4">
+                    <div className="skeleton h-8 w-8 shrink-0 rounded-full" />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="skeleton h-4 w-1/3 max-w-[10rem]" />
+                      <div className="skeleton h-3 w-1/4 max-w-[7rem]" />
+                    </div>
+                    <div className="skeleton h-3 w-20" />
+                  </li>
+                ))}
+              </ul>
             )}
             {!trendingLoading && trending.length === 0 && (
               <p className="p-8 font-mono text-sm uppercase text-cream/50">
@@ -703,7 +770,14 @@ export default function HomeClient({ initialTrending = [] }) {
                   disabled={trendingLoadingMore}
                   className="liquid-glass rounded-full px-6 py-2.5 font-mono text-xs uppercase tracking-wide text-cream transition hover:bg-white/10 disabled:opacity-50"
                 >
-                  {trendingLoadingMore ? "Loading…" : "Load more"}
+                  {trendingLoadingMore ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="skeleton h-3 w-3 rounded-full" />
+                      Loading…
+                    </span>
+                  ) : (
+                    "Load more"
+                  )}
                 </button>
               </div>
             )}
