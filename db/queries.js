@@ -112,7 +112,7 @@ export async function getRelatedSkills(tags, excludeId, limit = 3) {
   return rows;
 }
 
-export async function getTrending({ window = "weekly", limit = 100 } = {}) {
+export async function getTrending({ window = "weekly", limit = 100, offset = 0 } = {}) {
   // Always attach real total / daily / weekly from installs.
   // Sort key depends on the requested window so tabs differ when data exists.
   const orderBy = {
@@ -121,6 +121,9 @@ export async function getTrending({ window = "weekly", limit = 100 } = {}) {
     hot: "COALESCE(inst.hot, 0) DESC, COALESCE(inst.weekly, 0) DESC, s.stars DESC",
     overall: "COALESCE(inst.total, s.downloads, 0) DESC, s.stars DESC",
   }[window] || "COALESCE(inst.weekly, 0) DESC, COALESCE(inst.total, 0) DESC, s.stars DESC";
+
+  const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+  const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
 
   const { rows } = await query(
     `SELECT s.id, s.name, s.owner, s.repo, s.path, s.stars, s.description, s.tags,
@@ -141,8 +144,8 @@ export async function getTrending({ window = "weekly", limit = 100 } = {}) {
      ) inst ON inst.skill_id = s.id
      WHERE s.duplicate_of IS NULL
      ORDER BY ${orderBy}
-     LIMIT $1`,
-    [limit]
+     LIMIT $1 OFFSET $2`,
+    [safeLimit, safeOffset]
   );
   return rows;
 }
