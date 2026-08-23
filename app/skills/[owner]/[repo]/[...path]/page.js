@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSkillDetail, getRelatedSkills } from "../../../../../db/queries.js";
 import { severityFromFlags } from "../../../../../lib/safety-scan.js";
+import { enrichSkillWithHf } from "../../../../../lib/hf-downloads.js";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }) {
 export default async function SkillPage({ params }) {
   const { owner, repo, path } = await params;
   const pathStr = Array.isArray(path) ? path.join("/") : path;
-  const skill = await getSkillDetail(owner, repo, pathStr);
+  let skill = await getSkillDetail(owner, repo, pathStr);
 
   if (!skill) {
     return (
@@ -77,6 +78,7 @@ export default async function SkillPage({ params }) {
     );
   }
 
+  skill = await enrichSkillWithHf(skill);
   const related = await getRelatedSkills(skill.tags || [], skill.id, 4).catch(() => []);
   const sev = severityFromFlags(skill.flag_reasons || []);
   const badge = SEV_STYLE[sev] || SEV_STYLE.clean;
@@ -137,6 +139,25 @@ export default async function SkillPage({ params }) {
               <span className="text-cream/40">Day </span>
               {(skill.downloads_daily ?? 0).toLocaleString()}
             </span>
+            {skill.hf_downloads != null && (
+              <span title={skill.hf_model_id || "Hugging Face"}>
+                <span className="text-cream/40">HF </span>
+                {Number(skill.hf_downloads).toLocaleString()}
+                {skill.hf_url && (
+                  <>
+                    {" "}
+                    <a
+                      href={skill.hf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-neon hover:underline"
+                    >
+                      ↗
+                    </a>
+                  </>
+                )}
+              </span>
+            )}
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span
