@@ -93,6 +93,27 @@ export default async function SkillPage({ params }) {
   const slug = cleanPath(skill.path);
   const pageUrl = `${SITE_URL}/skills/${skill.owner}/${skill.repo}/${slug}`;
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: skill.owner,
+        item: `https://github.com/${skill.owner}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: skill.name,
+        item: pageUrl,
+      },
+    ],
+  };
+
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -115,6 +136,10 @@ export default async function SkillPage({ params }) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
       <div className="relative z-10 mx-auto max-w-3xl px-6 py-10 sm:px-10 sm:py-16">
