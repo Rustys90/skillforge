@@ -9,7 +9,9 @@ import {
 import { rateLimit } from "../../../../lib/rate-limit.js";
 
 export async function GET(request) {
-  if (!isAdmin(request)) return Response.json({ error: "unauthorized" }, { status: 401 });
+  if (!isAdmin(request)) {
+    return Response.json({ error: "unauthorized" }, { status: 401 });
+  }
   try {
     const pending = await listPending("pending");
     return Response.json({ pending });
@@ -27,16 +29,17 @@ export async function POST(request) {
     return Response.json({ error: "invalid request" }, { status: 400 });
   }
 
-  // Login: password only, no id
+  // Login path: password only
   if (body?.password && !body?.id) {
     const rl = await rateLimit(request, "admin-login");
     if (!rl.ok) return Response.json({ error: "rate limited" }, { status: 429 });
 
-    if (!checkAdminPassword(body.password)) {
+    const check = checkAdminPassword(body.password);
+    if (!check.ok) {
       return Response.json({ error: "unauthorized" }, { status: 401 });
     }
-    const token = createAdminToken();
-    return new Response(JSON.stringify({ ok: true }), {
+    const token = createAdminToken(check.adminId || "admin");
+    return new Response(JSON.stringify({ ok: true, admin: check.adminId }), {
       status: 200,
       headers: {
         "content-type": "application/json",
@@ -46,7 +49,9 @@ export async function POST(request) {
     });
   }
 
-  if (!isAdmin(request)) return Response.json({ error: "unauthorized" }, { status: 401 });
+  if (!isAdmin(request)) {
+    return Response.json({ error: "unauthorized" }, { status: 401 });
+  }
 
   const rl = await rateLimit(request, "admin");
   if (!rl.ok) return Response.json({ error: "rate limited" }, { status: 429 });
