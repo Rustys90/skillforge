@@ -1,8 +1,12 @@
+import { isAllowedOrigin } from "../../../lib/origin.js";
 // app/api/report/route.js
 import { reportSkill } from "../../../db/queries.js";
 import { rateLimit } from "../../../lib/rate-limit.js";
 
 export async function POST(request) {
+  if (!isAllowedOrigin(request)) {
+    return Response.json({ error: "forbidden origin" }, { status: 403 });
+  }
   const rl = await rateLimit(request, "report");
   if (!rl.ok) return Response.json({ error: "rate limited" }, { status: 429 });
 
