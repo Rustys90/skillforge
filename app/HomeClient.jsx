@@ -226,6 +226,7 @@ export default function HomeClient({ initialTrending = [] }) {
   const [activeTag, setActiveTag] = useState("");
   const [results, setResults] = useState(initialTrending);
   const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState(null);
   const [totalResults, setTotalResults] = useState(null);
   const [tab, setTab] = useState("weekly");
   const [trending, setTrending] = useState([]);
@@ -244,13 +245,20 @@ export default function HomeClient({ initialTrending = [] }) {
         : "/api/skills/trending?limit=6";
     const t = setTimeout(() => {
       setCatalogLoading(true);
+      setCatalogError(null);
       fetch(url)
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error("search failed");
+          return r.json();
+        })
         .then((d) => {
           setResults(d.results || []);
           setTotalResults(d.total ?? null);
         })
-        .catch(() => setResults([]))
+        .catch(() => {
+          setResults([]);
+          setCatalogError("Could not load skills. Check your connection and try again.");
+        })
         .finally(() => setCatalogLoading(false));
     }, 250);
     return () => clearTimeout(t);
@@ -432,7 +440,7 @@ export default function HomeClient({ initialTrending = [] }) {
                 ) : null}
                 <button
                   type="submit"
-                  className="rounded-full bg-neon px-3.5 py-2 font-grotesk text-[11px] uppercase tracking-wide text-space transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream/40 active:translate-y-px"
+                  className="pressable rounded-full bg-neon px-3.5 py-2 font-grotesk text-[11px] uppercase tracking-wide text-space transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream/40"
                 >
                   Search
                 </button>
@@ -447,7 +455,7 @@ export default function HomeClient({ initialTrending = [] }) {
                   type="button"
                   onClick={() => setActiveTag((cur) => (cur === tag ? "" : tag))}
                   className={cn(
-                    "rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-wide transition",
+                    "pressable rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/50",
                     activeTag === tag
                       ? "bg-neon text-space"
                       : "liquid-glass text-cream hover:bg-white/10"
@@ -565,6 +573,34 @@ export default function HomeClient({ initialTrending = [] }) {
             </div>
           )}
 
+          <div className="status-live mb-4 font-mono text-[10px] uppercase tracking-wide text-cream/45" aria-live="polite">
+            {catalogLoading
+              ? "Scanning index…"
+              : catalogError
+                ? catalogError
+                : query.trim()
+                  ? `${(totalResults ?? results.length).toLocaleString()} match${(totalResults ?? results.length) === 1 ? "" : "es"}`
+                  : totalResults != null
+                    ? `${totalResults.toLocaleString()} skills indexed`
+                    : ""}
+          </div>
+
+          {catalogError && !catalogLoading && (
+            <div className="liquid-glass mb-6 rounded-[24px] px-6 py-5" role="alert">
+              <p className="font-mono text-xs uppercase text-cream/80">{catalogError}</p>
+              <button
+                type="button"
+                className="pressable mt-3 rounded-full bg-neon px-4 py-2 font-grotesk text-[11px] uppercase tracking-wide text-space"
+                onClick={() => {
+                  setCatalogError(null);
+                  setQuery((q) => q + "");
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
           {catalogLoading && (
             <div
               className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
@@ -601,7 +637,7 @@ export default function HomeClient({ initialTrending = [] }) {
               <article
                 key={s.id || `${s.owner}-${s.name}`}
                 onClick={() => openSkill(s)}
-                className={`reveal liquid-glass cursor-pointer rounded-[32px] p-[18px] transition duration-300 hover:-translate-y-1 hover:bg-white/10 hover:shadow-lg hover:shadow-neon/10 stagger-${Math.min(i + 1, 6)}`}
+                className={`reveal liquid-glass cursor-pointer rounded-[32px] p-[18px] transition duration-300 hover:bg-white/[0.06] active:bg-white/[0.08] stagger-${Math.min(i + 1, 6)}`}
               >
                 <div className="flex min-h-[120px] flex-col justify-between rounded-[24px] bg-white/[0.03] p-5">
                   <div>
@@ -654,7 +690,7 @@ export default function HomeClient({ initialTrending = [] }) {
                   <button
                     type="button"
                     aria-label={`View ${s.name}`}
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-neon to-emerald-600 shadow-lg shadow-neon/30 transition hover:scale-110"
+                    className="pressable flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-neon transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/60"
                   >
                     <ChevronRight className="h-5 w-5 text-space" />
                   </button>
@@ -768,7 +804,7 @@ export default function HomeClient({ initialTrending = [] }) {
                   type="button"
                   onClick={loadMoreTrending}
                   disabled={trendingLoadingMore}
-                  className="liquid-glass rounded-full px-6 py-2.5 font-mono text-xs uppercase tracking-wide text-cream transition hover:bg-white/10 disabled:opacity-50"
+                  className="pressable liquid-glass rounded-full px-6 py-2.5 font-mono text-xs uppercase tracking-wide text-cream transition hover:bg-white/10 disabled:opacity-50 disabled:hover:bg-transparent"
                 >
                   {trendingLoadingMore ? (
                     <span className="inline-flex items-center gap-2">
