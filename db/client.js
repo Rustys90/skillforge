@@ -1,10 +1,19 @@
 // db/client.js
-// Single shared pg Pool. Import { query } wherever DB access is needed —
-// works from API routes, the crawler, and the seed importer script alike.
+// Single shared pg Pool. Import { query } wherever DB access is needed.
 
 import { Pool } from "pg";
 
 let pool;
+
+function sslConfig(connectionString) {
+  if (/localhost|127\.0\.0\.1/.test(connectionString)) return undefined;
+  // Require TLS and verify the server certificate (Node default CAs cover Supabase).
+  // Opt-out only via DATABASE_SSL_INSECURE=1 for broken local tunnels.
+  if (process.env.DATABASE_SSL_INSECURE === "1") {
+    return { rejectUnauthorized: false };
+  }
+  return { rejectUnauthorized: true };
+}
 
 export function getPool() {
   if (!pool) {
@@ -14,10 +23,11 @@ export function getPool() {
     }
     pool = new Pool({
       connectionString,
-      // Supabase (and most managed Postgres hosts) require SSL; skip only for
-      // plain local development connections.
-      ssl: /localhost|127\.0\.0\.1/.test(connectionString) ? undefined : { rejectUnauthorized: false },
+      ssl: sslConfig(connectionString),
       max: 5,
+      // Fail fast on hung connections
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
     });
   }
   return pool;
