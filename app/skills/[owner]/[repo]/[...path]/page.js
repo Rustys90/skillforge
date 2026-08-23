@@ -37,9 +37,10 @@ export async function generateMetadata({ params }) {
   }
   const slug = cleanPath(skill.path);
   const canonical = `${SITE_URL}/skills/${skill.owner}/${skill.repo}/${slug}`;
-  const description =
-    skill.description ||
-    `Install ${skill.name} from ${skill.owner}/${skill.repo}. Safety-scanned agent skill on SkillForge.`;
+  let description = skill.description || "";
+  if (!description || /pending crawler/i.test(description)) {
+    description = `Install ${skill.name} from ${skill.owner}/${skill.repo}. Safety-scanned agent skill on SkillForge.`;
+  }
   return {
     title: `${skill.name} — install for your AI agent`,
     description,
@@ -69,9 +70,15 @@ export default async function SkillPage({ params }) {
     return (
       <main className="min-h-screen bg-space px-6 py-16 font-mono text-cream">
         <div className="mx-auto max-w-2xl">
-          <p className="text-cream/70">Skill not found.</p>
-          <Link href="/" className="mt-4 inline-block text-neon hover:underline">
-            ← Home
+          <h1 className="font-grotesk text-2xl uppercase text-cream">Skill not found</h1>
+          <p className="mt-3 text-sm text-cream/60">
+            This skill may have been removed, renamed, or is still pending review.
+          </p>
+          <Link
+            href="/#browse"
+            className="mt-6 inline-flex rounded-full bg-neon px-5 py-2.5 text-xs uppercase tracking-wide text-space transition hover:opacity-90"
+          >
+            Browse catalog
           </Link>
         </div>
       </main>
