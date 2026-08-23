@@ -347,7 +347,7 @@ export async function setCrawlCursor(key, value) {
 /** Lightweight rows for SEO sitemap generation (cap protects build time). */
 export async function listSkillsForSitemap(limit = 5000) {
   const { rows } = await query(
-    `SELECT owner, repo, path, repo_updated_at, updated_at
+    `SELECT owner, repo, path, repo_updated_at, last_crawled_at, indexed_at
      FROM skills
      WHERE duplicate_of IS NULL
      ORDER BY stars DESC NULLS LAST, id ASC
