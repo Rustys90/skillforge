@@ -6,7 +6,12 @@ export default function robots() {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/api/admin", "/api/cron"],
+        disallow: ["/admin", "/api/", "/api/admin", "/api/cron"],
+      },
+      {
+        userAgent: "GPTBot",
+        allow: ["/", "/skills/"],
+        disallow: ["/admin", "/api/"],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
