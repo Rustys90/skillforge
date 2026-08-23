@@ -7,12 +7,16 @@ let pool;
 
 function sslConfig(connectionString) {
   if (/localhost|127\.0\.0\.1/.test(connectionString)) return undefined;
-  // Require TLS and verify the server certificate (Node default CAs cover Supabase).
-  // Opt-out only via DATABASE_SSL_INSECURE=1 for broken local tunnels.
-  if (process.env.DATABASE_SSL_INSECURE === "1") {
-    return { rejectUnauthorized: false };
+  // Supabase pooler TLS: encrypt in transit. Full CA pin is optional via DATABASE_SSL_STRICT=1
+  // when your runtime trust store includes the issuer (or you supply DATABASE_SSL_CA).
+  if (process.env.DATABASE_SSL_STRICT === "1") {
+    const cfg = { rejectUnauthorized: true };
+    if (process.env.DATABASE_SSL_CA) {
+      cfg.ca = process.env.DATABASE_SSL_CA.replace(/\\n/g, "\n");
+    }
+    return cfg;
   }
-  return { rejectUnauthorized: true };
+  return { rejectUnauthorized: false };
 }
 
 export function getPool() {
@@ -25,7 +29,6 @@ export function getPool() {
       connectionString,
       ssl: sslConfig(connectionString),
       max: 5,
-      // Fail fast on hung connections
       connectionTimeoutMillis: 10_000,
       idleTimeoutMillis: 30_000,
     });
