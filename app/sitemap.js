@@ -16,7 +16,7 @@ async function skillsFromDb() {
     .filter((s) => s.owner && s.repo && s.path)
     .map((s) => ({
       url: skillUrl(s),
-      lastModified: s.repo_updated_at || s.updated_at ? new Date(s.repo_updated_at || s.updated_at) : new Date(),
+      lastModified: s.repo_updated_at || s.last_crawled_at || s.indexed_at ? new Date(s.repo_updated_at || s.last_crawled_at || s.indexed_at) : new Date(),
       changeFrequency: "weekly",
       priority: 0.75,
     }));
@@ -26,7 +26,7 @@ async function skillsFromDb() {
 async function skillsFromApi() {
   const out = [];
   let offset = 0;
-  const limit = 100;
+  const limit = 50;
   for (let page = 0; page < 50; page++) {
     const res = await fetch(
       `${SITE_URL}/api/skills/search?limit=${limit}&offset=${offset}`,
