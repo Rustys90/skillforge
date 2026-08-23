@@ -16,7 +16,7 @@ import { upsertSkill, insertPendingSkill, getCrawlCursor, setCrawlCursor } from 
 
 export const maxDuration = 60;
 
-const BATCH_SIZE = parseInt(process.env.CRAWL_BATCH_SIZE || "8", 10);
+const BATCH_SIZE = parseInt(process.env.CRAWL_BATCH_SIZE || "15", 10);
 
 function authorizedCron(request) {
   const expected = process.env.CRON_SECRET || "";
