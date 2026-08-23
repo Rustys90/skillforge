@@ -7,10 +7,16 @@ export async function POST(request) {
   if (!rl.ok) return Response.json({ error: "rate limited" }, { status: 429 });
 
   const body = await request.json().catch(() => ({}));
-  const { owner, repo, path } = body;
+  const owner = String(body.owner || "").trim().slice(0, 100);
+  const repo = String(body.repo || "").trim().slice(0, 100);
+  const path = String(body.path || "").trim().slice(0, 400);
 
   if (!owner || !repo || !path) {
     return Response.json({ error: "owner, repo, and path are required" }, { status: 400 });
+  }
+  // Basic injection / path traversal guard
+  if (/[<>\0]/.test(owner + repo) || path.includes("..")) {
+    return Response.json({ error: "invalid input" }, { status: 400 });
   }
 
   try {
