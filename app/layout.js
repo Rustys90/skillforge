@@ -35,12 +35,14 @@ export const metadata = {
     title: "SkillForge — the agent skill registry",
     description:
       "Search and install AI agent skills from public GitHub. Safety-scanned. Live vs estimated metrics labeled.",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "SkillForge" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "SkillForge — the agent skill registry",
     description:
       "Search and install AI agent skills from public GitHub. Safety-scanned. One command.",
+    images: ["/twitter-image"],
   },
   robots: {
     index: true,
