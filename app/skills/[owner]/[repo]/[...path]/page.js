@@ -252,7 +252,7 @@ export default async function SkillPage({ params }) {
             href={`https://github.com/${skill.owner}/${skill.repo}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="liquid-glass inline-flex items-center rounded-full px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-cream transition hover:bg-white/10"
+            className="pressable liquid-glass inline-flex items-center rounded-full px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-cream transition hover:bg-white/10"
           >
             View source →
           </a>
