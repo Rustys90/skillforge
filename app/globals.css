@@ -393,3 +393,33 @@ button:disabled,
     -webkit-mask-image: none;
   }
 }
+
+
+.logo-marquee-reverse {
+  animation-name: logo-marquee-scroll-reverse;
+  animation-duration: 48s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes logo-marquee-scroll-reverse {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+
+.parallax-card {
+  transform: translateZ(0);
+  transition: transform 200ms ease, background-color 200ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .parallax-card:hover {
+    transform: translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-marquee-reverse {
+    animation: none;
+  }
+  .parallax-card:hover {
+    transform: none;
+  }
+}
