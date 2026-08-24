@@ -339,22 +339,19 @@ button:disabled,
 .logo-marquee-track {
   display: flex;
   width: max-content;
-  gap: 2.5rem;
-  animation: logo-marquee-scroll 42s linear infinite;
-}
-.logo-marquee:hover .logo-marquee-track {
-  animation-play-state: paused;
+  gap: 2.75rem;
+  animation: logo-marquee-scroll 38s linear infinite;
 }
 .logo-marquee-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.65rem;
+  gap: 0.7rem;
   flex-shrink: 0;
-  min-width: 7.5rem;
-  height: 3.25rem;
-  padding: 0 1rem;
-  opacity: 0.72;
+  min-width: 8.5rem;
+  height: 3.75rem;
+  padding: 0 1.15rem;
+  opacity: 0.92;
   transition: opacity 160ms ease, transform 160ms ease;
 }
 .logo-marquee-item:hover,
@@ -363,19 +360,20 @@ button:disabled,
   transform: translateY(-1px);
 }
 .logo-marquee-item img {
-  height: 28px;
+  height: 36px;
   width: auto;
-  max-width: 112px;
+  max-width: 132px;
   object-fit: contain;
-  filter: brightness(0) invert(1);
-  opacity: 0.9;
+  /* full brand color — no mono invert */
+  filter: none;
+  opacity: 1;
 }
 .logo-marquee-item .logo-fallback {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(239, 244, 255, 0.75);
+  color: rgba(239, 244, 255, 0.88);
   white-space: nowrap;
 }
 @keyframes logo-marquee-scroll {
