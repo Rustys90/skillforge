@@ -946,10 +946,10 @@ export default function HomeClient({ initialTrending = [] }) {
               >
                 {pub.slug ? (
                   <img
-                    src={`https://cdn.simpleicons.org/${pub.slug}/EFF4FF`}
+                    src={`https://cdn.simpleicons.org/${pub.slug}`}
                     alt=""
-                    width={112}
-                    height={28}
+                    width={132}
+                    height={36}
                     loading="lazy"
                     decoding="async"
                   />
