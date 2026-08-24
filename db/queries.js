@@ -356,3 +356,92 @@ export async function listSkillsForSitemap(limit = 5000) {
   );
   return rows;
 }
+
+
+/** Aggregates for homepage: counts, recent installs, newest skills, featured. */
+export async function getRegistryMeta() {
+  const { rows: countRows } = await query(
+    `SELECT COUNT(*)::int AS total FROM skills WHERE duplicate_of IS NULL`
+  );
+  const totalSkills = countRows[0]?.total ?? 0;
+
+  const { rows: installRows } = await query(
+    `SELECT COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE created_at > now() - interval '1 day')::int AS today
+     FROM installs`
+  );
+  const installsTotal = installRows[0]?.total ?? 0;
+  const installsToday = installRows[0]?.today ?? 0;
+
+  let recentInstalls = [];
+  try {
+    const { rows } = await query(
+      `SELECT s.name, s.owner, s.repo, s.path, i.created_at
+       FROM installs i
+       JOIN skills s ON s.id = i.skill_id
+       ORDER BY i.created_at DESC
+       LIMIT 12`
+    );
+    recentInstalls = rows;
+  } catch {
+    recentInstalls = [];
+  }
+
+  // Fallback ticker names from popular skills if no installs yet
+  if (recentInstalls.length === 0) {
+    const { rows } = await query(
+      `SELECT name, owner, repo, path FROM skills
+       WHERE duplicate_of IS NULL
+       ORDER BY stars DESC NULLS LAST
+       LIMIT 12`
+    );
+    recentInstalls = rows.map((r, i) => ({ ...r, created_at: null, synthetic: true }));
+  }
+
+  const { rows: newest } = await query(
+    `SELECT id, name, description, owner, repo, path, stars, tags,
+            downloads, indexed_at, last_crawled_at
+     FROM skills
+     WHERE duplicate_of IS NULL
+     ORDER BY COALESCE(indexed_at, last_crawled_at) DESC NULLS LAST
+     LIMIT 12`
+  );
+
+  // Featured: highest stars with a real-ish description, stable per day
+  const { rows: featuredRows } = await query(
+    `SELECT id, name, description, owner, repo, path, stars, tags, downloads
+     FROM skills
+     WHERE duplicate_of IS NULL
+       AND COALESCE(length(description), 0) > 40
+     ORDER BY stars DESC NULLS LAST
+     LIMIT 20`
+  );
+  const day = Math.floor(Date.now() / 86400000);
+  const featured =
+    featuredRows.length > 0
+      ? featuredRows[day % featuredRows.length]
+      : newest[0] || null;
+
+  // Crawl cursor snapshot for "index updates"
+  let crawlNote = null;
+  try {
+    const { rows } = await query(
+      `SELECT value, updated_at FROM crawl_state WHERE key = 'code_search' LIMIT 1`
+    );
+    if (rows[0]) {
+      crawlNote = { value: rows[0].value, updated_at: rows[0].updated_at };
+    }
+  } catch {
+    crawlNote = null;
+  }
+
+  return {
+    totalSkills,
+    installsTotal,
+    installsToday,
+    recentInstalls,
+    newest: applyDownloadEstimates(newest),
+    featured: featured ? applyDownloadEstimates([featured])[0] : null,
+    crawlNote,
+  };
+}
