@@ -98,20 +98,56 @@ function stableSeed(s) {
   return Math.abs(h >>> 0);
 }
 
-/** Prefer real CLI installs; otherwise a stable stars-based estimate (labeled in UI). */
+/** Mirror server stats: live only after meaningful install volume; else time-shifting estimates. */
+const LIVE_INSTALL_THRESHOLD = 25;
+
 function installStats(s) {
   const realTotal = Number(s.downloads_total ?? s.downloads ?? 0);
   const realDaily = Number(s.downloads_daily ?? 0);
   const realWeekly = Number(s.downloads_weekly ?? 0);
-  if (realTotal > 0 || realDaily > 0 || realWeekly > 0) {
+  // API may already have applied estimates
+  if (s.downloads_estimated === false && realTotal >= LIVE_INSTALL_THRESHOLD) {
+    return { total: realTotal, daily: realDaily, weekly: realWeekly, estimated: false };
+  }
+  if (s.downloads_estimated === true && Number(s.downloads_total) > 0) {
+    return {
+      total: Number(s.downloads_total),
+      daily: Number(s.downloads_daily ?? 0),
+      weekly: Number(s.downloads_weekly ?? 0),
+      estimated: true,
+    };
+  }
+  if (realTotal >= LIVE_INSTALL_THRESHOLD) {
     return { total: realTotal, daily: realDaily, weekly: realWeekly, estimated: false };
   }
   const stars = Math.max(0, Number(s.stars) || 0);
-  const seed = stableSeed(s);
-  const total = Math.max(1, Math.floor(Math.sqrt(stars) * 2.8) + (seed % 53));
-  const weekly = Math.max(0, Math.floor(total * (0.12 + (seed % 10) / 100)) + (seed % 9));
-  const daily = Math.max(0, Math.floor(weekly * (0.2 + (seed % 7) / 50)) + (seed % 4));
-  return { total, daily, weekly, estimated: true };
+  const baseKey = String(s?.id ?? `${s?.owner}/${s?.repo}/${s?.name}` ?? "x");
+  const seed = stableSeed({ id: baseKey });
+  const day = Math.floor(Date.now() / 86_400_000);
+  const week = Math.floor(day / 7);
+  let dayH = 2166136261;
+  const dayKey = `${baseKey}:d:${day}`;
+  for (let i = 0; i < dayKey.length; i++) {
+    dayH ^= dayKey.charCodeAt(i);
+    dayH = Math.imul(dayH, 16777619);
+  }
+  dayH = Math.abs(dayH >>> 0);
+  let weekH = 2166136261;
+  const weekKey = `${baseKey}:w:${week}`;
+  for (let i = 0; i < weekKey.length; i++) {
+    weekH ^= weekKey.charCodeAt(i);
+    weekH = Math.imul(weekH, 16777619);
+  }
+  weekH = Math.abs(weekH >>> 0);
+  const total = Math.max(1, Math.floor(Math.sqrt(stars) * 3.2) + (seed % 97) + Math.floor(stars / 500));
+  const weekly = Math.max(1, Math.floor(total * (0.1 + (weekH % 15) / 100)) + (weekH % 11));
+  const daily = Math.max(0, Math.floor(weekly * (0.12 + (dayH % 12) / 100)) + (dayH % 5));
+  return {
+    total: Math.max(total, realTotal),
+    daily: Math.max(daily, realDaily),
+    weekly: Math.max(weekly, realWeekly),
+    estimated: true,
+  };
 }
 
 function descText(s) {
