@@ -30,6 +30,23 @@ const NAV = [
 
 const TAGS = ["pdf", "xlsx", "api", "browser", "git", "testing"];
 
+/** Trusted / frequently indexed publishers — logo marquee (Simple Icons CDN). */
+const PUBLISHERS = [
+  { name: "Vercel", slug: "vercel", href: "https://github.com/vercel" },
+  { name: "Microsoft", slug: "microsoft", href: "https://github.com/microsoft" },
+  { name: "Stripe", slug: "stripe", href: "https://github.com/stripe" },
+  { name: "n8n", slug: "n8n", href: "https://github.com/n8n-io" },
+  { name: "GitHub", slug: "github", href: "https://github.com" },
+  { name: "Google", slug: "google", href: "https://github.com/google" },
+  { name: "Meta", slug: "meta", href: "https://github.com/facebook" },
+  { name: "Cloudflare", slug: "cloudflare", href: "https://github.com/cloudflare" },
+  { name: "Anthropic", slug: null, href: "https://github.com/anthropics" },
+  { name: "Better Auth", slug: null, href: "https://github.com/better-auth" },
+  { name: "Remotion", slug: null, href: "https://github.com/remotion-dev" },
+  { name: "Callstack", slug: null, href: "https://github.com/callstackincubator" },
+];
+
+
 function skillPath(s) {
   return (s.path || "").replace(/\/?SKILL\.md$/i, "");
 }
@@ -906,13 +923,47 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <section id="sources" className="reveal border-t border-white/5 py-12" aria-label="Indexed sources">
+      <section id="sources" className="reveal border-t border-white/5 py-14 sm:py-16" aria-label="Indexed sources">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
-          <p className="font-mono text-[10px] uppercase tracking-wide text-cream/40">Indexed publishers include</p>
-          <p className="mt-3 font-mono text-[11px] uppercase leading-relaxed text-cream/55">
-            anthropics · vercel-labs · better-auth · googleworkspace · microsoft · n8n-io · stripe · callstackincubator · remotion-dev · and independent authors on GitHub
+          <p className="font-mono text-[10px] uppercase tracking-wide text-cream/40">
+            Trusted publishers in the index
+          </p>
+          <p className="mt-2 max-w-xl font-mono text-[11px] uppercase leading-relaxed text-cream/50">
+            Logos loop from orgs that publish public agent skills on GitHub — not paid placement.
           </p>
         </div>
+        <div className="logo-marquee mt-8" aria-hidden="true">
+          <div className="logo-marquee-track">
+            {[...PUBLISHERS, ...PUBLISHERS].map((pub, i) => (
+              <a
+                key={`${pub.name}-${i}`}
+                href={pub.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="logo-marquee-item liquid-glass rounded-[16px]"
+                title={pub.name}
+                tabIndex={i < PUBLISHERS.length ? 0 : -1}
+              >
+                {pub.slug ? (
+                  <img
+                    src={`https://cdn.simpleicons.org/${pub.slug}/EFF4FF`}
+                    alt=""
+                    width={112}
+                    height={28}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span className="logo-fallback">{pub.name}</span>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+        <p className="sr-only">
+          Indexed publishers include Vercel, Microsoft, Stripe, n8n, GitHub, Google, Meta, Cloudflare,
+          Anthropic, Better Auth, Remotion, and Callstack.
+        </p>
       </section>
 
       <footer className="border-t border-white/5 px-6 py-12" role="contentinfo">
