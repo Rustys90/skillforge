@@ -336,6 +336,7 @@ export default function HomeClient({ initialTrending = [] }) {
       <a href="#browse" className="skip-link">
         Skip to catalog
       </a>
+      <main id="main">
       <div className="texture-overlay" aria-hidden />
 
       <section className="relative min-h-screen overflow-hidden rounded-b-[32px]" aria-label="Hero">
@@ -347,6 +348,7 @@ export default function HomeClient({ initialTrending = [] }) {
           muted
           playsInline
           preload="metadata"
+          fetchPriority="high"
           aria-hidden
         />
         <div className="motion-reduce-fallback absolute inset-0 bg-gradient-to-br from-space via-[#02103a] to-space" aria-hidden />
@@ -401,7 +403,7 @@ export default function HomeClient({ initialTrending = [] }) {
             </div>
 
             <p className="mt-6 max-w-md font-mono text-sm uppercase leading-relaxed text-cream/80 lg:ml-16">
-              Indexed from public GitHub. Safety-scanned. Install in one command.
+              Public GitHub skills. Scanned before publish. Install with one npx command.
             </p>
 
             <form
@@ -477,7 +479,7 @@ export default function HomeClient({ initialTrending = [] }) {
           loop
           muted
           playsInline
-          preload="metadata"
+          preload="none"
           aria-hidden
         />
         <div className="motion-reduce-fallback absolute inset-0 bg-gradient-to-r from-space via-[#02103a] to-space" aria-hidden />
@@ -848,7 +850,7 @@ export default function HomeClient({ initialTrending = [] }) {
       </section>
 
       <section id="install" className="reveal relative w-full overflow-hidden bg-space">
-        <video className="motion-safe-video block h-auto w-full" src={CTA_VIDEO} autoPlay loop muted playsInline preload="metadata" aria-hidden />
+        <video className="motion-safe-video block h-auto w-full" src={CTA_VIDEO} autoPlay loop muted playsInline preload="none" aria-hidden />
         <div className="motion-reduce-fallback min-h-[40vh] w-full bg-gradient-to-r from-space via-[#02103a] to-space" aria-hidden />
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute right-0 top-1/2 w-full max-w-3xl -translate-y-1/2 px-6 text-right sm:px-10 lg:pl-[15%] lg:pr-[12%]">
@@ -864,6 +866,52 @@ export default function HomeClient({ initialTrending = [] }) {
               </h2>
             </div>
           </div>
+        </div>
+      </section>
+
+
+      <section id="faq" className="reveal border-t border-white/5 bg-space py-16 sm:py-20" aria-labelledby="faq-heading">
+        <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
+          <h2 id="faq-heading" className="font-grotesk text-[28px] uppercase leading-tight text-cream sm:text-[40px]">
+            FAQ
+          </h2>
+          <p className="mt-3 max-w-xl font-mono text-xs uppercase text-cream/50">
+            Straight answers for agent builders installing skills for the first time.
+          </p>
+          <dl className="mt-10 space-y-6">
+            {[
+              {
+                q: "What is an agent skill?",
+                a: "A SKILL.md package that teaches coding agents how to run a task. SkillForge indexes public ones from GitHub.",
+              },
+              {
+                q: "How do I install one?",
+                a: "Open any skill, copy npx skillforge add owner/repo/skill, and run it in your terminal.",
+              },
+              {
+                q: "Are they scanned?",
+                a: "Yes. Risky patterns go to review instead of silent publish. Metrics marked live are measured; est. means star-derived until installs accumulate.",
+              },
+              {
+                q: "Where do skills come from?",
+                a: "Public GitHub only — community authors and orgs that publish SKILL.md files.",
+              },
+            ].map((item) => (
+              <div key={item.q} className="liquid-glass rounded-[20px] px-5 py-4">
+                <dt className="font-grotesk text-sm uppercase tracking-wide text-neon">{item.q}</dt>
+                <dd className="mt-2 font-mono text-[12px] uppercase leading-relaxed text-cream/65">{item.a}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      <section id="sources" className="reveal border-t border-white/5 py-12" aria-label="Indexed sources">
+        <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
+          <p className="font-mono text-[10px] uppercase tracking-wide text-cream/40">Indexed publishers include</p>
+          <p className="mt-3 font-mono text-[11px] uppercase leading-relaxed text-cream/55">
+            anthropics · vercel-labs · better-auth · googleworkspace · microsoft · n8n-io · stripe · callstackincubator · remotion-dev · and independent authors on GitHub
+          </p>
         </div>
       </section>
 
@@ -893,6 +941,11 @@ export default function HomeClient({ initialTrending = [] }) {
                 </a>
               </li>
               <li>
+                <a href="#faq" className="transition hover:text-neon focus-visible:text-neon">
+                  FAQ
+                </a>
+              </li>
+              <li>
                 <a
                   href="https://github.com/Rustys90/skillforge"
                   target="_blank"
@@ -910,6 +963,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </p>
       </footer>
 
+      </main>
       <SkillDialog skill={selected} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   );
