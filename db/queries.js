@@ -28,6 +28,11 @@ export function computeDownloadStats(r) {
   const realHot = Number(r.downloads_hot ?? 0);
 
   if (realTotal >= LIVE_INSTALL_THRESHOLD) {
+    // Independent rank scores so windows still sort differently with live data
+    const scoreDaily = realDaily * 10_000 + realTotal;
+    const scoreWeekly = realWeekly * 10_000 + realTotal;
+    const scoreHot = (realHot || realDaily) * 10_000 + realWeekly * 100 + realTotal;
+    const scoreOverall = realTotal * 10_000 + realWeekly;
     return {
       downloads: realTotal,
       downloads_total: realTotal,
@@ -35,6 +40,10 @@ export function computeDownloadStats(r) {
       downloads_weekly: realWeekly,
       downloads_hot: realHot || realDaily,
       downloads_estimated: false,
+      score_daily: scoreDaily,
+      score_weekly: scoreWeekly,
+      score_hot: scoreHot,
+      score_overall: scoreOverall,
     };
   }
 
@@ -45,31 +54,57 @@ export function computeDownloadStats(r) {
   const week = Math.floor(day / 7);
   const daySeed = stableSeed(`${baseKey}:d:${day}`);
   const weekSeed = stableSeed(`${baseKey}:w:${week}`);
-  const hotSeed = stableSeed(`${baseKey}:h:${day}`);
+  const hotSeed = stableSeed(`${baseKey}:h:${Math.floor(day / 3)}`); // 3-day hot bucket
+  const overallSeed = stableSeed(`${baseKey}:o`);
 
-  // Baseline scales with sqrt(stars) so mega-repos dominate without pure noise
-  const total = Math.max(
+  // Shared baseline from stars
+  const baseline = Math.max(
     1,
     Math.floor(Math.sqrt(stars) * 3.2) + (seed % 97) + Math.floor(stars / 500)
   );
-  // Weekly moves each UTC week; daily moves each UTC day
-  const weeklyRatio = 0.1 + (weekSeed % 15) / 100;
-  const weekly = Math.max(1, Math.floor(total * weeklyRatio) + (weekSeed % 11));
-  const daily = Math.max(0, Math.floor(weekly * (0.12 + (daySeed % 12) / 100)) + (daySeed % 5));
-  const hot = Math.max(daily, Math.floor(weekly * (0.35 + (hotSeed % 10) / 100)) + (hotSeed % 4));
 
-  // If we have a few real installs, surface them as a floor (still estimated overall)
-  const blendedTotal = Math.max(total, realTotal);
-  const blendedWeekly = Math.max(weekly, realWeekly);
-  const blendedDaily = Math.max(daily, realDaily);
+  // --- Divergent window volumes (not simple fractions of the same total) ---
+  // Overall: stable popularity
+  const total = Math.max(baseline, realTotal);
+
+  // Weekly: reshuffle with strong week noise (can promote mid-star skills)
+  const weeklyBoost = (weekSeed % 1000) / 1000; // 0..1
+  const weekly = Math.max(
+    1,
+    Math.floor(baseline * (0.06 + weeklyBoost * 0.22)) + (weekSeed % 40)
+  );
+
+  // Daily: independent day curve — intentionally less tied to weekly
+  const dailyBoost = (daySeed % 1000) / 1000;
+  const daily = Math.max(
+    0,
+    Math.floor(baseline * (0.008 + dailyBoost * 0.05)) + (daySeed % 25)
+  );
+
+  // Hot: burstiness — can spike skills that aren't weekly leaders
+  const hotBoost = (hotSeed % 1000) / 1000;
+  const hot = Math.max(
+    daily,
+    Math.floor(baseline * (0.02 + hotBoost * 0.12)) + (hotSeed % 55)
+  );
+
+  // Rank scores: primary metric dominates sort so leaderboards diverge clearly
+  const score_daily = daily * 100_000 + (daySeed % 10_000) + Math.floor(Math.log10(stars + 10) * 100);
+  const score_weekly = weekly * 100_000 + (weekSeed % 10_000) + Math.floor(Math.sqrt(stars));
+  const score_hot = hot * 100_000 + (hotSeed % 10_000) + (daySeed % 500);
+  const score_overall = total * 100_000 + (overallSeed % 5_000) + stars;
 
   return {
-    downloads: blendedTotal,
-    downloads_total: blendedTotal,
-    downloads_daily: blendedDaily,
-    downloads_weekly: blendedWeekly,
+    downloads: total,
+    downloads_total: total,
+    downloads_daily: Math.max(daily, realDaily),
+    downloads_weekly: Math.max(weekly, realWeekly),
     downloads_hot: hot,
     downloads_estimated: true,
+    score_daily,
+    score_weekly,
+    score_hot,
+    score_overall,
   };
 }
 
@@ -80,15 +115,22 @@ export function applyDownloadEstimates(rows) {
 
 /** Sort helper for trending windows after estimates are applied. */
 export function sortByDownloadWindow(rows, window = "weekly") {
-  const key = {
+  const scoreKey = {
+    daily: "score_daily",
+    weekly: "score_weekly",
+    hot: "score_hot",
+    overall: "score_overall",
+  }[window] || "score_weekly";
+  const fallbackKey = {
     daily: "downloads_daily",
     weekly: "downloads_weekly",
     hot: "downloads_hot",
     overall: "downloads_total",
   }[window] || "downloads_weekly";
   return [...rows].sort((a, b) => {
-    const d = (Number(b[key]) || 0) - (Number(a[key]) || 0);
-    if (d !== 0) return d;
+    const sa = Number(a[scoreKey] ?? a[fallbackKey]) || 0;
+    const sb = Number(b[scoreKey] ?? b[fallbackKey]) || 0;
+    if (sb !== sa) return sb - sa;
     return (Number(b.stars) || 0) - (Number(a.stars) || 0);
   });
 }
@@ -211,7 +253,7 @@ export async function getTrending({ window = "weekly", limit = 100, offset = 0 }
   const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
   const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
   // Pull a wider star-ranked pool, apply time-aware estimates, then sort by window.
-  const pool = Math.min(500, Math.max(safeLimit + safeOffset + 80, 120));
+  const pool = Math.min(800, Math.max(safeLimit + safeOffset + 200, 300));
 
   const { rows } = await query(
     `SELECT s.id, s.name, s.owner, s.repo, s.path, s.stars, s.description, s.tags,
