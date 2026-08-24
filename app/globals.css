@@ -328,3 +328,70 @@ button:disabled,
 .status-live {
   min-height: 1.25rem;
 }
+
+
+/* Infinite logo marquee — trusted publishers */
+.logo-marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.logo-marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 2.5rem;
+  animation: logo-marquee-scroll 42s linear infinite;
+}
+.logo-marquee:hover .logo-marquee-track {
+  animation-play-state: paused;
+}
+.logo-marquee-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+  min-width: 7.5rem;
+  height: 3.25rem;
+  padding: 0 1rem;
+  opacity: 0.72;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.logo-marquee-item:hover,
+.logo-marquee-item:focus-visible {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+.logo-marquee-item img {
+  height: 28px;
+  width: auto;
+  max-width: 112px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+}
+.logo-marquee-item .logo-fallback {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(239, 244, 255, 0.75);
+  white-space: nowrap;
+}
+@keyframes logo-marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-marquee-track {
+    animation: none;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+    row-gap: 1rem;
+  }
+  .logo-marquee {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+}
