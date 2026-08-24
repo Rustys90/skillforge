@@ -22,7 +22,7 @@ export function LegalPage({ title, updated, children }) {
             </p>
           )}
         </header>
-        <div className="legal-prose mt-10 space-y-8 font-mono text-[13px] leading-relaxed text-cream/75">
+        <div className="legal-prose mt-10 space-y-8 text-cream/75">
           {children}
         </div>
         <footer className="mt-16 border-t border-white/10 pt-8">
@@ -59,7 +59,7 @@ export function LegalPage({ title, updated, children }) {
 }
 
 export function H({ children }) {
-  return <h2 className="font-grotesk text-lg uppercase tracking-wide text-neon">{children}</h2>;
+  return <h2 className="font-grotesk text-lg uppercase tracking-wide text-cream">{children}</h2>;
 }
 
 export function P({ children }) {
