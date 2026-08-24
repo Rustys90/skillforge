@@ -1320,13 +1320,23 @@ export default function HomeClient({ initialTrending = [] }) {
                 </a>
               </li>
               <li>
-                <a href="#install" className="transition hover:text-neon focus-visible:text-neon">
-                  Install
+                <a href="#faq" className="transition hover:text-neon focus-visible:text-neon">
+                  FAQ
                 </a>
               </li>
               <li>
-                <a href="#faq" className="transition hover:text-neon focus-visible:text-neon">
-                  FAQ
+                <a href="/privacy" className="transition hover:text-neon focus-visible:text-neon">
+                  Privacy
+                </a>
+              </li>
+              <li>
+                <a href="/terms" className="transition hover:text-neon focus-visible:text-neon">
+                  Terms
+                </a>
+              </li>
+              <li>
+                <a href="/acceptable-use" className="transition hover:text-neon focus-visible:text-neon">
+                  Acceptable use
                 </a>
               </li>
               <li>
