@@ -1,16 +1,13 @@
 /*
-  SkillForge — anti-slop decision sheet
-  SUBJECT   Public agent-skill registry: find, scan, install SKILL.md in one command.
-  GROUND    Ops console in deep space — phosphor status, glass bezels, mono telemetry.
-  PALETTE   space #010828 (cool navy), cream #EFF4FF, neon #6FFF00 (phosphor),
-            glass rgba(255,255,255,0.01), dim cream/45 meta. Neutral is cool, not warm beige.
-  TYPE      Display = Anton (block index headings). Accent = Condiment (one signature word).
-            Body/UI = system ui-monospace first (telemetry), not Inter-as-brand.
-  SPACE     Intra-component: 8 / 12 / 16. Section rhythm: 64 / 80 / 112. Different registers.
-  SHAPE     Radius 24px instrument bezels. Elevation = tonal glass only (no soft marketing shadows).
-  MOTION    Purposeful only: scroll-reveal (content in), :active press (100ms), skeleton (loading),
-            catalog stagger (scan order). Band 100–400ms. Reduced-motion disables the rest.
-  SIGNATURE Liquid-glass panels + neon phosphor on #010828 — CRT instrument in vacuum.
+  SkillForge visual system (post look-pass)
+  SUBJECT   Agent skill registry
+  GROUND    Ops console in deep space
+  PALETTE   space #010828 · cream #EFF4FF · neon #6FFF00
+  TYPE      Anton display · Condiment signature · mono chrome · soft body for long copy
+  SPACE     intra 8/12/16 · section 64/80/112
+  SHAPE     --radius-bezel 20px · pills full · elevation tonal only
+  MOTION    press / reveal / skeleton / marquee only
+  SIGNATURE Liquid-glass + neon phosphor (reserved, not on every surface)
 */
 
 @tailwind base;
@@ -23,9 +20,11 @@
   --neon: #6fff00;
   --glass: rgba(255, 255, 255, 0.01);
   --focus: rgba(111, 255, 0, 0.65);
-  --radius-bezel: 24px;
+  --radius-bezel: 20px;
+  --radius-panel: 20px;
   --duration-press: 100ms;
   --duration-reveal: 400ms;
+  --measure: 65ch;
 }
 
 html {
@@ -43,12 +42,18 @@ body {
   margin: 0;
   background: var(--space);
   color: var(--cream);
-  /* Utility stack — telemetry, not marketing Inter */
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   min-height: 100vh;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   caret-color: var(--neon);
+}
+
+/* Long-form copy — not mono shouting */
+.font-body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 
 * {
@@ -79,7 +84,6 @@ body {
   outline-offset: 2px;
 }
 
-/* Press receipt — strongest anti-inert signal */
 button:active:not(:disabled),
 [role="button"]:active,
 a.liquid-glass:active,
@@ -125,6 +129,23 @@ button:disabled,
   max-width: 1120px;
 }
 
+/* Tonal panel — secondary surfaces (not every block is glass) */
+.panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-panel);
+}
+
+.section-band {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 40%);
+}
+
+.divider-soft {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+}
+
 @supports (backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px)) {
   .liquid-glass {
     background: rgba(255, 255, 255, 0.01);
@@ -135,6 +156,7 @@ button:disabled,
     box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
     position: relative;
     overflow: hidden;
+    border-radius: var(--radius-bezel);
   }
   .liquid-glass::before {
     content: "";
@@ -158,12 +180,32 @@ button:disabled,
   }
 }
 
+/* Hero grade — push any stock footage toward deep-space Orbis */
+.hero-grade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, transparent 0%, rgba(1, 8, 40, 0.55) 55%, rgba(1, 8, 40, 0.92) 100%),
+    linear-gradient(180deg, rgba(1, 8, 40, 0.35) 0%, rgba(1, 8, 40, 0.75) 100%),
+    linear-gradient(90deg, rgba(1, 8, 40, 0.5) 0%, transparent 40%, transparent 60%, rgba(1, 8, 40, 0.45) 100%);
+  mix-blend-mode: multiply;
+}
+.hero-grade-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(1, 8, 40, 0.35);
+  backdrop-filter: saturate(0.55) brightness(0.75);
+  -webkit-backdrop-filter: saturate(0.55) brightness(0.75);
+}
+
 .texture-overlay {
   position: fixed;
   inset: 0;
   z-index: 50;
   pointer-events: none;
-  opacity: 0.35;
+  opacity: 0.28;
   background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   background-size: 3px 3px;
   mix-blend-mode: soft-light;
@@ -278,6 +320,10 @@ button:disabled,
   .pressable:active {
     transform: none;
   }
+  .logo-marquee-track,
+  .logo-marquee-reverse {
+    animation: none !important;
+  }
 }
 
 .motion-reduce-fallback {
@@ -324,13 +370,11 @@ button:disabled,
   vertical-align: middle;
 }
 
-/* Catalog status live region */
 .status-live {
   min-height: 1.25rem;
 }
 
-
-/* Infinite logo marquee — trusted publishers */
+/* Logo marquee */
 .logo-marquee {
   overflow: hidden;
   mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
@@ -364,7 +408,6 @@ button:disabled,
   width: auto;
   max-width: 132px;
   object-fit: contain;
-  /* full brand color — no mono invert */
   filter: none;
   opacity: 1;
 }
@@ -377,24 +420,13 @@ button:disabled,
   white-space: nowrap;
 }
 @keyframes logo-marquee-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .logo-marquee-track {
-    animation: none;
-    flex-wrap: wrap;
-    width: 100%;
-    justify-content: center;
-    row-gap: 1rem;
+  from {
+    transform: translateX(0);
   }
-  .logo-marquee {
-    mask-image: none;
-    -webkit-mask-image: none;
+  to {
+    transform: translateX(-50%);
   }
 }
-
-
 .logo-marquee-reverse {
   animation-name: logo-marquee-scroll-reverse;
   animation-duration: 48s;
@@ -402,24 +434,86 @@ button:disabled,
   animation-iteration-count: infinite;
 }
 @keyframes logo-marquee-scroll-reverse {
-  from { transform: translateX(-50%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 .parallax-card {
   transform: translateZ(0);
   transition: transform 200ms ease, background-color 200ms ease;
+  border-radius: var(--radius-bezel);
 }
 @media (hover: hover) and (pointer: fine) {
   .parallax-card:hover {
     transform: translateY(-2px);
   }
 }
+
+/* Tag chips — never clip mid-label */
+.tag-chip {
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-width: max-content;
+}
+
+/* Featured skill — distinct from grid cards */
+.featured-card {
+  border-radius: var(--radius-bezel);
+  background: linear-gradient(135deg, rgba(111, 255, 0, 0.08), rgba(255, 255, 255, 0.02) 45%, rgba(1, 8, 40, 0.4));
+  border: 1px solid rgba(111, 255, 0, 0.22);
+  box-shadow: inset 0 1px 0 rgba(111, 255, 0, 0.12);
+}
+
+.collection-accent {
+  width: 3px;
+  border-radius: 999px;
+  background: var(--neon);
+  flex-shrink: 0;
+}
+
+/* Mobile nav strip */
+.mobile-nav-strip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.35rem 0;
+  scrollbar-width: none;
+}
+.mobile-nav-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.legal-prose {
+  max-width: var(--measure);
+}
+.legal-prose p,
+.legal-prose li {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .logo-marquee-reverse {
     animation: none;
   }
   .parallax-card:hover {
     transform: none;
+  }
+  .logo-marquee {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  .logo-marquee-track {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+    row-gap: 1rem;
   }
 }
