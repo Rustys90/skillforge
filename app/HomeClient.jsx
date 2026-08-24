@@ -186,7 +186,7 @@ function SkillDialog({ skill, open, onOpenChange, onToast, compareIds, onToggleC
           </div>
         ) : (
           <>
-            <p className="text-sm leading-relaxed text-cream/80">
+            <p className="font-body text-[15px] leading-relaxed text-cream/80">
               {descText(s)}
             </p>
 
@@ -222,7 +222,7 @@ function SkillDialog({ skill, open, onOpenChange, onToast, compareIds, onToggleC
                 </button>
               )}
             </div>
-            <pre className="mt-3 overflow-x-auto rounded-[16px] bg-black/40 px-3 py-2 font-mono text-[11px] text-neon/90">{cmd}</pre>
+            <pre className="mt-3 overflow-x-auto rounded-[var(--radius-bezel)] bg-black/40 px-3 py-2 font-mono text-[11px] text-neon/90">{cmd}</pre>
 
             {s.tags?.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -475,34 +475,20 @@ export default function HomeClient({ initialTrending = [] }) {
       <main id="main">
       <div className="texture-overlay" aria-hidden />
 
-      {/* Stats + live install ticker */}
+      {/* Slim stats + install ticker */}
       <div className="relative z-[60] border-b border-white/5 bg-space/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-content flex-col gap-2 px-4 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-10">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-wide text-cream/55">
+        <div className="mx-auto flex max-w-content items-center gap-4 px-4 py-1.5 sm:px-10">
+          <div className="flex shrink-0 items-center gap-2 font-mono text-[10px] uppercase tracking-wide text-cream/55">
             <span className="text-neon/90">
               {(meta?.totalSkills ?? "—").toLocaleString?.() ?? meta?.totalSkills ?? "—"} skills
             </span>
-            <span>
-              {(meta?.installsToday ?? 0).toLocaleString()} installs today
+            <span className="hidden text-cream/30 sm:inline">·</span>
+            <span className="hidden sm:inline">
+              {(meta?.installsToday ?? 0).toLocaleString()} today
               <span className="badge-live ml-1">live</span>
             </span>
-            <span className="hidden sm:inline">{(meta?.installsTotal ?? 0).toLocaleString()} tracked installs</span>
-            <button
-              type="button"
-              onClick={() => setCliOpen(true)}
-              className="pressable hidden items-center gap-1 text-cream/70 transition hover:text-neon sm:inline-flex"
-            >
-              <Terminal className="h-3 w-3" /> CLI guide
-            </button>
-            <button
-              type="button"
-              onClick={() => setCmdOpen(true)}
-              className="pressable inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-0.5 text-cream/70 transition hover:text-neon"
-            >
-              <Command className="h-3 w-3" /> ⌘K
-            </button>
           </div>
-          <div className="logo-marquee max-w-full flex-1 sm:max-w-md" id="live-ticker" aria-label="Recent installs">
+          <div className="logo-marquee min-w-0 flex-1" id="live-ticker" aria-label="Recent installs">
             <div className="logo-marquee-track" style={{ animationDuration: "28s" }}>
               {[...(meta?.recentInstalls || []), ...(meta?.recentInstalls || [])].map((item, i) => (
                 <span
@@ -535,17 +521,48 @@ export default function HomeClient({ initialTrending = [] }) {
           fetchPriority="high"
           aria-hidden
         />
+        <div className="hero-grade-tint" aria-hidden />
+        <div className="hero-grade" aria-hidden />
         <div className="motion-reduce-fallback absolute inset-0 bg-gradient-to-br from-space via-[#02103a] to-space" aria-hidden />
         {/* Stronger cinematic veil — keeps type readable, hides busy footage */}
         <div className="absolute inset-0 bg-gradient-to-b from-space/70 via-space/50 to-space/80" />
         <div className="absolute inset-0 bg-space/30" />
         <div className="relative z-10 mx-auto flex min-h-screen max-w-content flex-col px-6 py-8 sm:px-10 lg:px-16">
-          <header className="flex items-center justify-between">
-            <Link href="/" className="font-grotesk text-[16px] uppercase tracking-wide text-cream">
-              SkillForge
-            </Link>
-            <nav className="liquid-glass hidden rounded-[28px] px-10 py-5 lg:block">
-              <ul className="flex items-center gap-8">
+          <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center justify-between gap-3">
+              <Link href="/" className="font-grotesk text-[16px] uppercase tracking-wide text-cream">
+                SkillForge
+              </Link>
+              <div className="flex items-center gap-2 sm:hidden">
+                <button
+                  type="button"
+                  onClick={() => setCmdOpen(true)}
+                  className="pressable rounded-full border border-white/10 px-2.5 py-1 font-mono text-[10px] uppercase text-cream/70"
+                >
+                  ⌘K
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCliOpen(true)}
+                  className="pressable rounded-full border border-white/10 px-2.5 py-1 font-mono text-[10px] uppercase text-cream/70"
+                >
+                  CLI
+                </button>
+              </div>
+            </div>
+            <nav className="mobile-nav-strip lg:hidden" aria-label="Mobile">
+              {NAV.filter((n) => !n.external).map((item) => (
+                <a
+                  key={`m-${item.label}`}
+                  href={item.href}
+                  className="tag-chip rounded-full border border-white/10 px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-cream/70"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+            <nav className="liquid-glass hidden rounded-[var(--radius-bezel)] px-6 py-3 lg:block" aria-label="Primary">
+              <ul className="flex items-center gap-6">
                 {NAV.map((item) => (
                   <li key={item.label}>
                     {item.external ? (
@@ -567,9 +584,26 @@ export default function HomeClient({ initialTrending = [] }) {
                     )}
                   </li>
                 ))}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setCmdOpen(true)}
+                    className="pressable rounded-full border border-white/10 px-2.5 py-1 font-mono text-[10px] uppercase text-cream/70 hover:text-neon"
+                  >
+                    ⌘K
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setCliOpen(true)}
+                    className="pressable rounded-full border border-white/10 px-2.5 py-1 font-mono text-[10px] uppercase text-cream/70 hover:text-neon"
+                  >
+                    CLI
+                  </button>
+                </li>
               </ul>
             </nav>
-            <div className="hidden w-[90px] lg:block" />
           </header>
 
           <div className="relative mt-auto flex flex-1 flex-col justify-center pb-16 pt-24 lg:pb-24">
@@ -586,7 +620,7 @@ export default function HomeClient({ initialTrending = [] }) {
               </span>
             </div>
 
-            <p className="mt-6 max-w-md font-mono text-sm uppercase leading-relaxed text-cream/80 lg:ml-16">
+            <p className="font-body mt-6 max-w-md text-sm leading-relaxed text-cream/80 lg:ml-16">
               Public GitHub skills. Scanned before publish. Install with one npx command.
             </p>
 
@@ -634,17 +668,17 @@ export default function HomeClient({ initialTrending = [] }) {
             </form>
 
 
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:ml-16" style={{ scrollbarWidth: "thin" }}>
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-2 lg:ml-16" style={{ scrollbarWidth: "thin" }}>
               {TAGS.map((tag) => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => setActiveTag((cur) => (cur === tag ? "" : tag))}
                   className={cn(
-                    "pressable rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/50",
+                    "tag-chip pressable rounded-full px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/50",
                     activeTag === tag
                       ? "bg-neon text-space"
-                      : "liquid-glass text-cream hover:bg-white/10"
+                      : "border border-white/10 bg-white/[0.04] text-cream hover:bg-white/10"
                   )}
                 >
                   {tag}
@@ -656,7 +690,7 @@ export default function HomeClient({ initialTrending = [] }) {
       </section>
 
       
-      <div className="border-b border-white/5 bg-space py-3">
+      <div className="section-band border-b border-white/5 py-3">
         <div className="mx-auto flex max-w-content flex-wrap items-center justify-between gap-3 px-6 sm:px-10 lg:px-16">
           <div className="flex flex-wrap gap-2">
             {[
@@ -708,7 +742,7 @@ export default function HomeClient({ initialTrending = [] }) {
                 Skills
               </span>
             </div>
-            <p className="max-w-[280px] font-mono text-[14px] uppercase leading-relaxed text-cream sm:text-[16px]">
+            <p className="font-body max-w-[300px] text-[15px] leading-relaxed text-cream/85 sm:text-[16px]">
               A living index of agent skills from public GitHub — scanned, ranked, installable in one line.
             </p>
           </div>
@@ -769,8 +803,8 @@ export default function HomeClient({ initialTrending = [] }) {
           </form>
 
           {results.length === 0 && (
-            <div className="liquid-glass mb-10 rounded-[28px] px-8 py-12 text-center" role="status">
-              <p className="font-grotesk text-lg uppercase tracking-wide text-cream">No skills matched</p>
+            <div className="liquid-glass mb-10 rounded-[var(--radius-bezel)] px-8 py-12 text-center" role="status">
+              <p className="font-grotesk text-xl uppercase tracking-wide text-cream">No skills matched</p>
               <p className="mt-2 font-mono text-xs uppercase text-cream/50">
                 Try another keyword, clear filters, or browse trending below.
               </p>
@@ -800,7 +834,7 @@ export default function HomeClient({ initialTrending = [] }) {
           </div>
 
           {catalogError && !catalogLoading && (
-            <div className="liquid-glass mb-6 rounded-[24px] px-6 py-5" role="alert">
+            <div className="liquid-glass mb-6 rounded-[var(--radius-bezel)] px-6 py-5" role="alert">
               <p className="font-mono text-xs uppercase text-cream/80">{catalogError}</p>
               <button
                 type="button"
@@ -820,17 +854,17 @@ export default function HomeClient({ initialTrending = [] }) {
           {meta?.featured && (
             <article
               id="featured"
-              className="parallax-card liquid-glass mb-8 cursor-pointer rounded-[32px] p-6 transition hover:bg-white/[0.06]"
+              className="featured-card parallax-card mb-8 cursor-pointer p-6 sm:p-8"
               onClick={() => openSkill(meta.featured)}
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="font-mono text-[10px] uppercase tracking-wide text-neon">Skill of the day</p>
-                  <h3 className="mt-1 font-grotesk text-2xl uppercase text-cream sm:text-3xl">{meta.featured.name}</h3>
-                  <p className="mt-1 font-mono text-xs uppercase text-cream/50">
+                <div className="min-w-0 flex-1">
+                  <p className="font-condiment text-xl text-neon sm:text-2xl">Skill of the day</p>
+                  <h3 className="mt-1 font-grotesk text-3xl uppercase tracking-wide text-cream sm:text-4xl">{meta.featured.name}</h3>
+                  <p className="mt-2 font-mono text-[11px] uppercase tracking-wide text-cream/50">
                     {meta.featured.owner}/{meta.featured.repo} · {(meta.featured.stars ?? 0).toLocaleString()}★
                   </p>
-                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cream/75">{descText(meta.featured)}</p>
+                  <p className="font-body mt-4 max-w-2xl text-[15px] leading-relaxed text-cream/80">{descText(meta.featured)}</p>
                 </div>
                 <div className="flex flex-col gap-2">
                   <button
@@ -870,10 +904,13 @@ export default function HomeClient({ initialTrending = [] }) {
                   setQuery("");
                   document.getElementById("browse")?.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="parallax-card liquid-glass rounded-[24px] p-4 text-left transition hover:bg-white/[0.06]"
+                className="parallax-card panel flex gap-3 p-4 text-left transition hover:bg-white/[0.05]"
               >
-                <p className="font-grotesk text-sm uppercase text-neon">{c.title}</p>
-                <p className="mt-1 font-mono text-[11px] uppercase text-cream/55">{c.blurb}</p>
+                <span className="collection-accent" aria-hidden />
+                <span>
+                  <p className="font-grotesk text-sm uppercase tracking-wide text-cream">{c.title}</p>
+                  <p className="font-body mt-1 text-[13px] leading-snug text-cream/55">{c.blurb}</p>
+                </span>
               </button>
             ))}
           </div>
@@ -888,9 +925,9 @@ export default function HomeClient({ initialTrending = [] }) {
                     key={skillKey(s)}
                     type="button"
                     onClick={() => openSkill(s)}
-                    className="parallax-card liquid-glass w-[220px] shrink-0 rounded-[20px] p-4 text-left transition hover:bg-white/[0.06]"
+                    className="parallax-card panel w-[220px] shrink-0 p-4 text-left transition hover:bg-white/[0.05]"
                   >
-                    <p className="truncate font-grotesk text-sm uppercase text-cream">{s.name}</p>
+                    <p className="truncate font-grotesk text-sm uppercase tracking-wide text-cream">{s.name}</p>
                     <p className="mt-1 truncate font-mono text-[10px] uppercase text-cream/45">
                       {s.owner} · {(s.stars ?? 0).toLocaleString()}★
                     </p>
@@ -907,8 +944,8 @@ export default function HomeClient({ initialTrending = [] }) {
               aria-label="Loading skills"
             >
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={`sk-${i}`} className="liquid-glass rounded-[32px] p-[18px]">
-                  <div className="flex min-h-[120px] flex-col justify-between rounded-[24px] bg-white/[0.03] p-5">
+                <div key={`sk-${i}`} className="liquid-glass rounded-[var(--radius-bezel)] p-[18px]">
+                  <div className="flex min-h-[120px] flex-col justify-between rounded-[var(--radius-bezel)] bg-white/[0.03] p-5">
                     <div>
                       <div className="skeleton h-5 w-2/5 max-w-[9rem]" />
                       <div className="skeleton mt-2 h-3 w-1/3 max-w-[6rem]" />
@@ -918,7 +955,7 @@ export default function HomeClient({ initialTrending = [] }) {
                       <div className="skeleton h-3 w-4/5" />
                     </div>
                   </div>
-                  <div className="mt-4 flex gap-4 rounded-[20px] px-2 py-4">
+                  <div className="mt-4 flex gap-4 rounded-[var(--radius-bezel)] px-2 py-4">
                     <div className="skeleton h-8 w-16" />
                     <div className="skeleton h-8 w-16" />
                     <div className="skeleton h-8 w-16" />
@@ -936,11 +973,11 @@ export default function HomeClient({ initialTrending = [] }) {
               <article
                 key={s.id || `${s.owner}-${s.name}`}
                 onClick={() => openSkill(s)}
-                className={`reveal liquid-glass cursor-pointer rounded-[32px] p-[18px] transition duration-300 hover:bg-white/[0.06] active:bg-white/[0.08] stagger-${Math.min(i + 1, 6)}`}
+                className={`reveal liquid-glass cursor-pointer rounded-[var(--radius-bezel)] p-[18px] transition duration-300 hover:bg-white/[0.06] active:bg-white/[0.08] stagger-${Math.min(i + 1, 6)}`}
               >
-                <div className="flex min-h-[120px] flex-col justify-between rounded-[24px] bg-white/[0.03] p-5">
+                <div className="flex min-h-[120px] flex-col justify-between rounded-[var(--radius-bezel)] bg-white/[0.03] p-5">
                   <div>
-                    <h3 className="font-grotesk text-lg uppercase tracking-wide text-cream">
+                    <h3 className="font-grotesk text-xl uppercase tracking-wide text-cream">
                       {s.name}
                     </h3>
                     <p className="mt-1 font-mono text-[11px] uppercase text-cream/50">
@@ -951,7 +988,7 @@ export default function HomeClient({ initialTrending = [] }) {
                     {descText(s)}
                   </p>
                 </div>
-                <div className="liquid-glass mt-4 flex items-center justify-between gap-3 rounded-[20px] px-5 py-4">
+                <div className="liquid-glass mt-4 flex items-center justify-between gap-3 rounded-[var(--radius-bezel)] px-5 py-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap gap-4">
                       <div>
@@ -998,8 +1035,8 @@ export default function HomeClient({ initialTrending = [] }) {
             ))}
           </div>
           {!catalogLoading && results.length === 0 && (
-            <div className="liquid-glass mt-4 rounded-[28px] px-8 py-12 text-center" role="status">
-              <p className="font-grotesk text-lg uppercase tracking-wide text-cream">No skills matched</p>
+            <div className="liquid-glass mt-4 rounded-[var(--radius-bezel)] px-8 py-12 text-center" role="status">
+              <p className="font-grotesk text-xl uppercase tracking-wide text-cream">No skills matched</p>
               <p className="mt-2 font-mono text-xs uppercase text-cream/50">
                 Try another keyword or clear filters.
               </p>
@@ -1122,10 +1159,11 @@ export default function HomeClient({ initialTrending = [] }) {
 
       <section id="trust" className="reveal border-y border-white/5 bg-space py-16 sm:py-20" aria-labelledby="trust-heading">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
+          <p className="font-condiment text-2xl text-neon sm:text-3xl">Trust</p>
           <h2 id="trust-heading" className="font-grotesk text-[28px] uppercase leading-tight text-cream sm:text-[40px]">
-            Built for trust
+            Built for operators
           </h2>
-          <p className="mt-3 max-w-2xl font-mono text-xs uppercase leading-relaxed text-cream/55">
+          <p className="font-body mt-3 max-w-2xl text-[14px] leading-relaxed text-cream/60">
             Public GitHub sources only. Content is scanned before publish. Install counts marked{" "}
             <span className="text-cream/80">live</span> are measured; <span className="text-cream/80">est.</span> means
             derived from stars until real installs accumulate.
@@ -1137,9 +1175,9 @@ export default function HomeClient({ initialTrending = [] }) {
               { t: "Honest metrics", d: "Live vs estimated install counts are labeled in the UI." },
               { t: "One command", d: "npx skillforge add owner/repo/skill — copy and run." },
             ].map((item) => (
-              <div key={item.t} className="liquid-glass rounded-[24px] p-5">
+              <div key={item.t} className="liquid-glass rounded-[var(--radius-bezel)] p-5">
                 <p className="font-grotesk text-sm uppercase tracking-wide text-neon">{item.t}</p>
-                <p className="mt-2 font-mono text-[11px] uppercase leading-relaxed text-cream/60">{item.d}</p>
+                <p className="font-body mt-2 text-[13px] leading-relaxed text-cream/60">{item.d}</p>
               </div>
             ))}
           </div>
@@ -1152,7 +1190,7 @@ export default function HomeClient({ initialTrending = [] }) {
           <p className="mt-2 font-mono text-[11px] uppercase text-cream/50">
             Crawler runs continuously. Latest cursor snapshot from the registry.
           </p>
-          <div className="mt-4 liquid-glass rounded-[20px] px-4 py-3 font-mono text-[11px] uppercase text-cream/65">
+          <div className="mt-4 liquid-glass rounded-[var(--radius-bezel)] px-4 py-3 font-mono text-[11px] uppercase text-cream/65">
             {meta?.crawlNote?.updated_at
               ? `Last crawl state update · ${new Date(meta.crawlNote.updated_at).toLocaleString()}`
               : "Crawl state will appear after the next indexed run."}
@@ -1164,7 +1202,8 @@ export default function HomeClient({ initialTrending = [] }) {
       </section>
 
       <section id="install" className="reveal relative w-full overflow-hidden bg-space">
-        <video className="motion-safe-video block h-auto w-full" src={CTA_VIDEO} autoPlay loop muted playsInline preload="none" aria-hidden />
+        <video className="motion-safe-video block h-auto w-full brightness-75 contrast-110 saturate-50" src={CTA_VIDEO} autoPlay loop muted playsInline preload="none" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 bg-space/40" aria-hidden />
         <div className="motion-reduce-fallback min-h-[40vh] w-full bg-gradient-to-r from-space via-[#02103a] to-space" aria-hidden />
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute right-0 top-1/2 w-full max-w-3xl -translate-y-1/2 px-6 text-right sm:px-10 lg:pl-[15%] lg:pr-[12%]">
@@ -1194,10 +1233,11 @@ export default function HomeClient({ initialTrending = [] }) {
 
       <section id="faq" className="reveal border-t border-white/5 bg-space py-16 sm:py-20" aria-labelledby="faq-heading">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
+          <p className="font-condiment text-2xl text-neon sm:text-3xl">Questions</p>
           <h2 id="faq-heading" className="font-grotesk text-[28px] uppercase leading-tight text-cream sm:text-[40px]">
             FAQ
           </h2>
-          <p className="mt-3 max-w-xl font-mono text-xs uppercase text-cream/50">
+          <p className="font-body mt-3 max-w-xl text-[14px] leading-relaxed text-cream/55">
             Straight answers for agent builders installing skills for the first time.
           </p>
           <dl className="mt-10 space-y-6">
@@ -1219,9 +1259,9 @@ export default function HomeClient({ initialTrending = [] }) {
                 a: "Public GitHub only — community authors and orgs that publish SKILL.md files.",
               },
             ].map((item) => (
-              <div key={item.q} className="liquid-glass rounded-[20px] px-5 py-4">
+              <div key={item.q} className="liquid-glass rounded-[var(--radius-bezel)] px-5 py-4">
                 <dt className="font-grotesk text-sm uppercase tracking-wide text-neon">{item.q}</dt>
-                <dd className="mt-2 font-mono text-[12px] uppercase leading-relaxed text-cream/65">{item.a}</dd>
+                <dd className="font-body mt-2 text-[14px] leading-relaxed text-cream/65">{item.a}</dd>
               </div>
             ))}
           </dl>
@@ -1245,7 +1285,7 @@ export default function HomeClient({ initialTrending = [] }) {
                 href={pub.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="logo-marquee-item liquid-glass rounded-[16px]"
+                className="logo-marquee-item liquid-glass rounded-[var(--radius-bezel)]"
                 title={pub.name}
                 tabIndex={i < PUBLISHERS.length ? 0 : -1}
               >
@@ -1273,7 +1313,7 @@ export default function HomeClient({ initialTrending = [] }) {
                 href={pub.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="logo-marquee-item liquid-glass rounded-[16px]"
+                className="logo-marquee-item liquid-glass rounded-[var(--radius-bezel)]"
                 title={pub.name}
                 tabIndex={-1}
               >
@@ -1393,7 +1433,7 @@ export default function HomeClient({ initialTrending = [] }) {
       {cmdOpen && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/70 px-4 pt-[15vh]" onClick={() => setCmdOpen(false)}>
           <div
-            className="liquid-glass w-full max-w-lg rounded-[24px] p-4"
+            className="liquid-glass w-full max-w-lg rounded-[var(--radius-bezel)] p-4"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-label="Search skills"
@@ -1433,7 +1473,7 @@ export default function HomeClient({ initialTrending = [] }) {
       {/* CLI modal */}
       {cliOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4" onClick={() => setCliOpen(false)}>
-          <div className="liquid-glass w-full max-w-md rounded-[28px] p-6" onClick={(e) => e.stopPropagation()} role="dialog">
+          <div className="liquid-glass w-full max-w-md rounded-[var(--radius-bezel)] p-6" onClick={(e) => e.stopPropagation()} role="dialog">
             <div className="flex items-center justify-between">
               <h3 className="font-grotesk text-xl uppercase text-cream">CLI quickstart</h3>
               <button type="button" onClick={() => setCliOpen(false)} aria-label="Close">
@@ -1445,7 +1485,7 @@ export default function HomeClient({ initialTrending = [] }) {
               <li>2. Run it in your project terminal.</li>
               <li>3. Your agent can load the skill from the install path.</li>
             </ol>
-            <pre className="mt-4 overflow-x-auto rounded-[16px] bg-black/40 px-3 py-2 text-[11px] text-neon">npx skillforge add owner/repo/skill</pre>
+            <pre className="mt-4 overflow-x-auto rounded-[var(--radius-bezel)] bg-black/40 px-3 py-2 text-[11px] text-neon">npx skillforge add owner/repo/skill</pre>
             <button
               type="button"
               className="pressable mt-4 w-full rounded-full bg-neon py-2.5 font-grotesk text-[11px] uppercase text-space"
@@ -1463,7 +1503,7 @@ export default function HomeClient({ initialTrending = [] }) {
       {/* Compare dialog */}
       {compareOpen && compareList.length === 2 && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4" onClick={() => setCompareOpen(false)}>
-          <div className="liquid-glass grid w-full max-w-3xl gap-4 rounded-[28px] p-6 sm:grid-cols-2" onClick={(e) => e.stopPropagation()}>
+          <div className="liquid-glass grid w-full max-w-3xl gap-4 rounded-[var(--radius-bezel)] p-6 sm:grid-cols-2" onClick={(e) => e.stopPropagation()}>
             {compareList.map((s) => (
               <div key={skillKey(s)}>
                 <h3 className="font-grotesk text-lg uppercase text-cream">{s.name}</h3>
