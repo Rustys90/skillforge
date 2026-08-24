@@ -84,6 +84,46 @@ const orgLd = {
   sameAs: ["https://github.com/Rustys90/skillforge"],
 };
 
+
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What is an agent skill?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "An agent skill is a SKILL.md package that teaches AI coding agents (Claude, Cursor, and similar) how to perform a task. SkillForge indexes public skills from GitHub.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How do I install a skill from SkillForge?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Copy the install command from any skill page and run it in your terminal: npx skillforge add owner/repo/skill",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Are SkillForge skills safety-scanned?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Skills are scanned for risky patterns before publish. Flagged skills go to review instead of silent publish. Install metrics are labeled live or estimated.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Where do SkillForge skills come from?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "From public GitHub repositories that publish SKILL.md files. Sources include community and organization repos such as Anthropic, Vercel Labs, and independent authors.",
+      },
+    },
+  ],
+};
+
 const softwareLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
@@ -117,6 +157,10 @@ export default function RootLayout({ children }) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
         />
       </head>
       <body className="min-h-screen bg-space antialiased">{children}</body>
