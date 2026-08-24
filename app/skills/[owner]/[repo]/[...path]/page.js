@@ -114,6 +114,31 @@ export default async function SkillPage({ params }) {
   };
 
 
+  
+  const howToLd = {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: `Install ${skill.name} agent skill`,
+    description: `Install the ${skill.name} skill for your AI coding agent using SkillForge.`,
+    step: [
+      {
+        "@type": "HowToStep",
+        name: "Copy the install command",
+        text: `Copy: ${cmd}`,
+      },
+      {
+        "@type": "HowToStep",
+        name: "Run in your terminal",
+        text: "Paste the command in a terminal at your project root and press Enter.",
+      },
+      {
+        "@type": "HowToStep",
+        name: "Use the skill in your agent",
+        text: "Your agent can now load this skill from the installed path.",
+      },
+    ],
+  };
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -140,6 +165,10 @@ export default async function SkillPage({ params }) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(howToLd) }}
       />
 
       <div className="relative z-10 mx-auto max-w-3xl px-6 py-10 sm:px-10 sm:py-16">
