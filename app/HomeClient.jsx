@@ -383,7 +383,7 @@ export default function HomeClient({ initialTrending = [] }) {
       ? `/api/skills/search?q=${encodeURIComponent(query)}${activeTag ? `&tag=${encodeURIComponent(activeTag)}` : ""}`
       : activeTag
         ? `/api/skills/search?tag=${encodeURIComponent(activeTag)}&limit=20`
-        : "/api/skills/trending?limit=6";
+        : "/api/skills/trending?window=overall&limit=12";
     const t = setTimeout(() => {
       setCatalogLoading(true);
       setCatalogError(null);
@@ -1137,7 +1137,7 @@ export default function HomeClient({ initialTrending = [] }) {
                 No installs yet — be the first.
               </p>
             )}
-            <ul className="divide-y divide-white/10">
+            <ul className="divide-y divide-white/10" key={`trend-${tab}`}>
               {trending.map((s, i) => (
                 <li key={s.id || `${s.owner}-${s.repo}-${i}`}>
                   <button
@@ -1157,14 +1157,33 @@ export default function HomeClient({ initialTrending = [] }) {
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-0.5 font-mono text-[10px] uppercase text-cream/60 sm:flex-row sm:items-center sm:gap-3">
-                      <span className="inline-flex items-center gap-1">
-                        <Star className="h-3 w-3 text-neon" /> {(s.stars ?? 0).toLocaleString()}
+                      <span className="inline-flex items-center gap-1 text-cream/40">
+                        <Star className="h-3 w-3" /> {(s.stars ?? 0).toLocaleString()}
                       </span>
-                      <span title={installStats(s).estimated ? "Estimated from stars" : "Measured installs"}>
-                        {installStats(s).total} total{installStats(s).estimated ? "·est" : ""}
-                      </span>
-                      <span title="Weekly">{installStats(s).weekly} wk</span>
-                      <span title="Daily">{installStats(s).daily} day</span>
+                      {tab === "daily" && (
+                        <span className="text-neon">
+                          {installStats(s).daily.toLocaleString()} today
+                          {installStats(s).estimated ? " ·est" : ""}
+                        </span>
+                      )}
+                      {tab === "weekly" && (
+                        <span className="text-neon">
+                          {installStats(s).weekly.toLocaleString()} this week
+                          {installStats(s).estimated ? " ·est" : ""}
+                        </span>
+                      )}
+                      {tab === "hot" && (
+                        <span className="text-neon">
+                          {(Number(s.downloads_hot) || Math.max(installStats(s).daily, installStats(s).weekly)).toLocaleString()} hot
+                          {installStats(s).estimated ? " ·est" : ""}
+                        </span>
+                      )}
+                      {tab === "overall" && (
+                        <span className="text-neon">
+                          {installStats(s).total.toLocaleString()} total
+                          {installStats(s).estimated ? " ·est" : ""}
+                        </span>
+                      )}
                     </div>
                   </button>
                 </li>
