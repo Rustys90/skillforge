@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, Star, Terminal, ExternalLink, ChevronRight } from "lucide-react";
+import { Search, Star, Terminal, ExternalLink, ChevronRight, Copy, Share2, Shield, Github, Command, X, GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -28,7 +28,14 @@ const NAV = [
   { label: "GitHub", href: "https://github.com/Rustys90/skillforge", external: true },
 ];
 
-const TAGS = ["pdf", "xlsx", "api", "browser", "git", "testing"];
+const TAGS = ["pdf", "xlsx", "csv", "api", "browser", "git", "testing", "deploy", "docker", "sql", "email", "security", "docs"];
+
+const COLLECTIONS = [
+  { id: "docs", title: "Documents", tag: "pdf", blurb: "PDF, docs, and file skills" },
+  { id: "web", title: "Browser & API", tag: "browser", blurb: "Fetch, browse, and API agents" },
+  { id: "git", title: "Git & ship", tag: "git", blurb: "Repos, deploy, and shipping" },
+  { id: "data", title: "Data", tag: "sql", blurb: "SQL, CSV, and tables" },
+];
 
 /** Trusted / frequently indexed publishers — logo marquee (Simple Icons CDN). */
 const PUBLISHERS = [
@@ -55,6 +62,30 @@ function skillHref(s) {
 }
 function installCmd(s) {
   return `npx skillforge add ${s.owner}/${s.repo}/${skillPath(s) || s.name}`;
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+function skillShareUrl(s) {
+  if (typeof window === "undefined") return skillHref(s);
+  return `${window.location.origin}${skillHref(s)}`;
 }
 
 function stableSeed(s) {
@@ -91,7 +122,7 @@ function descText(s) {
   return d;
 }
 
-function SkillDialog({ skill, open, onOpenChange }) {
+function SkillDialog({ skill, open, onOpenChange, onToast, compareIds, onToggleCompare }) {
   const [full, setFull] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -158,6 +189,40 @@ function SkillDialog({ skill, open, onOpenChange }) {
             <p className="text-sm leading-relaxed text-cream/80">
               {descText(s)}
             </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="pressable inline-flex items-center gap-1.5 rounded-full bg-neon px-3.5 py-2 font-grotesk text-[11px] uppercase tracking-wide text-space"
+                onClick={async () => {
+                  const ok = await copyText(cmd);
+                  onToast?.(ok ? "Install command copied" : "Could not copy");
+                }}
+              >
+                <Copy className="h-3.5 w-3.5" /> Copy install
+              </button>
+              <button
+                type="button"
+                className="pressable liquid-glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 font-mono text-[11px] uppercase tracking-wide text-cream"
+                onClick={async () => {
+                  const ok = await copyText(skillShareUrl(s));
+                  onToast?.(ok ? "Skill link copied" : "Could not copy link");
+                }}
+              >
+                <Share2 className="h-3.5 w-3.5" /> Share
+              </button>
+              {onToggleCompare && (
+                <button
+                  type="button"
+                  className="pressable liquid-glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 font-mono text-[11px] uppercase tracking-wide text-cream"
+                  onClick={() => onToggleCompare(s)}
+                >
+                  <GitCompare className="h-3.5 w-3.5" />
+                  {compareIds?.has(String(s.id ?? `${s.owner}/${s.name}`)) ? "In compare" : "Compare"}
+                </button>
+              )}
+            </div>
+            <pre className="mt-3 overflow-x-auto rounded-[16px] bg-black/40 px-3 py-2 font-mono text-[11px] text-neon/90">{cmd}</pre>
 
             {s.tags?.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -248,6 +313,29 @@ export default function HomeClient({ initialTrending = [] }) {
   const [tab, setTab] = useState("weekly");
   const [trending, setTrending] = useState([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
+  const [meta, setMeta] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const [cliOpen, setCliOpen] = useState(false);
+  const [compareList, setCompareList] = useState([]);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [typedCmd, setTypedCmd] = useState("");
+  const showToast = (msg) => {
+    setToast(msg);
+    window.clearTimeout(showToast._t);
+    showToast._t = window.setTimeout(() => setToast(null), 2200);
+  };
+  const skillKey = (s) => String(s.id ?? `${s.owner}/${s.repo}/${s.name}`);
+  const compareIds = new Set(compareList.map(skillKey));
+  const toggleCompare = (s) => {
+    setCompareList((prev) => {
+      const k = skillKey(s);
+      const exists = prev.some((x) => skillKey(x) === k);
+      if (exists) return prev.filter((x) => skillKey(x) !== k);
+      if (prev.length >= 2) return [prev[1], s];
+      return [...prev, s];
+    });
+  };
   const [trendingLoadingMore, setTrendingLoadingMore] = useState(false);
   const [trendingHasMore, setTrendingHasMore] = useState(false);
   const TRENDING_PAGE = 20;
@@ -348,6 +436,37 @@ export default function HomeClient({ initialTrending = [] }) {
     setDialogOpen(true);
   };
 
+  useEffect(() => {
+    fetch("/api/skills/meta")
+      .then((r) => r.json())
+      .then((d) => setMeta(d))
+      .catch(() => setMeta(null));
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCmdOpen(true);
+      }
+      if (e.key === "Escape") setCmdOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    const full = "npx skillforge add owner/repo/skill";
+    let i = 0;
+    setTypedCmd("");
+    const id = window.setInterval(() => {
+      i += 1;
+      setTypedCmd(full.slice(0, i));
+      if (i >= full.length) window.clearInterval(id);
+    }, 55);
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-space text-cream">
       <a href="#browse" className="skip-link">
@@ -355,6 +474,54 @@ export default function HomeClient({ initialTrending = [] }) {
       </a>
       <main id="main">
       <div className="texture-overlay" aria-hidden />
+
+      {/* Stats + live install ticker */}
+      <div className="relative z-[60] border-b border-white/5 bg-space/90 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-content flex-col gap-2 px-4 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-10">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-wide text-cream/55">
+            <span className="text-neon/90">
+              {(meta?.totalSkills ?? "—").toLocaleString?.() ?? meta?.totalSkills ?? "—"} skills
+            </span>
+            <span>
+              {(meta?.installsToday ?? 0).toLocaleString()} installs today
+              <span className="badge-live ml-1">live</span>
+            </span>
+            <span className="hidden sm:inline">{(meta?.installsTotal ?? 0).toLocaleString()} tracked installs</span>
+            <button
+              type="button"
+              onClick={() => setCliOpen(true)}
+              className="pressable hidden items-center gap-1 text-cream/70 transition hover:text-neon sm:inline-flex"
+            >
+              <Terminal className="h-3 w-3" /> CLI guide
+            </button>
+            <button
+              type="button"
+              onClick={() => setCmdOpen(true)}
+              className="pressable inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-0.5 text-cream/70 transition hover:text-neon"
+            >
+              <Command className="h-3 w-3" /> ⌘K
+            </button>
+          </div>
+          <div className="logo-marquee max-w-full flex-1 sm:max-w-md" id="live-ticker" aria-label="Recent installs">
+            <div className="logo-marquee-track" style={{ animationDuration: "28s" }}>
+              {[...(meta?.recentInstalls || []), ...(meta?.recentInstalls || [])].map((item, i) => (
+                <span
+                  key={`inst-${i}-${item.name}`}
+                  className="logo-marquee-item !min-w-0 !h-auto !py-0.5 font-mono text-[10px] uppercase tracking-wide text-cream/60"
+                >
+                  just installed <span className="text-neon">{item.name}</span>
+                </span>
+              ))}
+              {!(meta?.recentInstalls?.length) && (
+                <span className="logo-marquee-item !min-w-0 font-mono text-[10px] uppercase text-cream/40">
+                  Install ticker warming up…
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
 
       <section className="relative min-h-screen overflow-hidden rounded-b-[32px]" aria-label="Hero">
         <video
@@ -467,7 +634,7 @@ export default function HomeClient({ initialTrending = [] }) {
             </form>
 
 
-            <div className="mt-4 flex flex-wrap gap-2 lg:ml-16">
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:ml-16" style={{ scrollbarWidth: "thin" }}>
               {TAGS.map((tag) => (
                 <button
                   key={tag}
@@ -488,7 +655,35 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <section className="relative min-h-[50vh] overflow-hidden">
+      
+      <div className="border-b border-white/5 bg-space py-3">
+        <div className="mx-auto flex max-w-content flex-wrap items-center justify-between gap-3 px-6 sm:px-10 lg:px-16">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { icon: Shield, label: "Safety scanned" },
+              { icon: Github, label: "Public GitHub" },
+              { icon: Star, label: "Live / est. metrics" },
+            ].map(({ icon: Icon, label }) => (
+              <span
+                key={label}
+                className="liquid-glass inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-cream/70"
+              >
+                <Icon className="h-3 w-3 text-neon" /> {label}
+              </span>
+            ))}
+          </div>
+          <a
+            href="https://github.com/Rustys90/skillforge"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pressable liquid-glass inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-cream/80 transition hover:text-neon"
+          >
+            <Github className="h-3.5 w-3.5" /> Open source · MIT
+          </a>
+        </div>
+      </div>
+
+<section className="relative min-h-[50vh] overflow-hidden">
         <video
           className="motion-safe-video absolute inset-0 h-full w-full object-cover"
           src={ABOUT_VIDEO}
@@ -617,6 +812,91 @@ export default function HomeClient({ initialTrending = [] }) {
               >
                 Retry
               </button>
+            </div>
+          )}
+
+          
+          {/* Featured skill of the day */}
+          {meta?.featured && (
+            <article
+              id="featured"
+              className="parallax-card liquid-glass mb-8 cursor-pointer rounded-[32px] p-6 transition hover:bg-white/[0.06]"
+              onClick={() => openSkill(meta.featured)}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-wide text-neon">Skill of the day</p>
+                  <h3 className="mt-1 font-grotesk text-2xl uppercase text-cream sm:text-3xl">{meta.featured.name}</h3>
+                  <p className="mt-1 font-mono text-xs uppercase text-cream/50">
+                    {meta.featured.owner}/{meta.featured.repo} · {(meta.featured.stars ?? 0).toLocaleString()}★
+                  </p>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-cream/75">{descText(meta.featured)}</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    className="pressable rounded-full bg-neon px-4 py-2 font-grotesk text-[11px] uppercase text-space"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const ok = await copyText(installCmd(meta.featured));
+                      showToast(ok ? "Install command copied" : "Copy failed");
+                    }}
+                  >
+                    Copy install
+                  </button>
+                  <button
+                    type="button"
+                    className="pressable liquid-glass rounded-full px-4 py-2 font-mono text-[11px] uppercase text-cream"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openSkill(meta.featured);
+                    }}
+                  >
+                    Open skill
+                  </button>
+                </div>
+              </div>
+            </article>
+          )}
+
+          {/* Collections */}
+          <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {COLLECTIONS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => {
+                  setActiveTag(c.tag);
+                  setQuery("");
+                  document.getElementById("browse")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="parallax-card liquid-glass rounded-[24px] p-4 text-left transition hover:bg-white/[0.06]"
+              >
+                <p className="font-grotesk text-sm uppercase text-neon">{c.title}</p>
+                <p className="mt-1 font-mono text-[11px] uppercase text-cream/55">{c.blurb}</p>
+              </button>
+            ))}
+          </div>
+
+          {/* New this week rail */}
+          {(meta?.newest?.length > 0) && (
+            <div className="mb-10">
+              <h3 className="mb-3 font-grotesk text-lg uppercase text-cream">New in the index</h3>
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {meta.newest.map((s) => (
+                  <button
+                    key={skillKey(s)}
+                    type="button"
+                    onClick={() => openSkill(s)}
+                    className="parallax-card liquid-glass w-[220px] shrink-0 rounded-[20px] p-4 text-left transition hover:bg-white/[0.06]"
+                  >
+                    <p className="truncate font-grotesk text-sm uppercase text-cream">{s.name}</p>
+                    <p className="mt-1 truncate font-mono text-[10px] uppercase text-cream/45">
+                      {s.owner} · {(s.stars ?? 0).toLocaleString()}★
+                    </p>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -866,6 +1146,23 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
+      <section id="changelog" className="reveal border-b border-white/5 py-10" aria-labelledby="changelog-heading">
+        <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
+          <h2 id="changelog-heading" className="font-grotesk text-xl uppercase text-cream">Index updates</h2>
+          <p className="mt-2 font-mono text-[11px] uppercase text-cream/50">
+            Crawler runs continuously. Latest cursor snapshot from the registry.
+          </p>
+          <div className="mt-4 liquid-glass rounded-[20px] px-4 py-3 font-mono text-[11px] uppercase text-cream/65">
+            {meta?.crawlNote?.updated_at
+              ? `Last crawl state update · ${new Date(meta.crawlNote.updated_at).toLocaleString()}`
+              : "Crawl state will appear after the next indexed run."}
+            {meta?.totalSkills != null && (
+              <span className="mt-1 block text-neon/80">{meta.totalSkills.toLocaleString()} skills currently indexed</span>
+            )}
+          </div>
+        </div>
+      </section>
+
       <section id="install" className="reveal relative w-full overflow-hidden bg-space">
         <video className="motion-safe-video block h-auto w-full" src={CTA_VIDEO} autoPlay loop muted playsInline preload="none" aria-hidden />
         <div className="motion-reduce-fallback min-h-[40vh] w-full bg-gradient-to-r from-space via-[#02103a] to-space" aria-hidden />
@@ -877,10 +1174,18 @@ export default function HomeClient({ initialTrending = [] }) {
               </span>
               <h2 className="font-grotesk text-[16px] uppercase leading-[1.1] text-cream sm:text-[28px] md:text-[40px] lg:text-[52px]">
                 <span className="mb-4 block sm:mb-6">Install.</span>
-                npx skillforge add
-                <br />
-                owner/repo/skill
+                <span className="font-mono text-[0.55em] normal-case tracking-normal text-neon sm:text-[0.45em]">
+                  {typedCmd}
+                  <span className="animate-pulse">▋</span>
+                </span>
               </h2>
+              <button
+                type="button"
+                onClick={() => setCliOpen(true)}
+                className="pressable pointer-events-auto mt-4 rounded-full bg-neon px-4 py-2 font-grotesk text-[11px] uppercase text-space"
+              >
+                CLI quickstart
+              </button>
             </div>
           </div>
         </div>
@@ -960,6 +1265,34 @@ export default function HomeClient({ initialTrending = [] }) {
             ))}
           </div>
         </div>
+        <div className="logo-marquee mt-3" aria-hidden="true">
+          <div className="logo-marquee-track logo-marquee-reverse">
+            {[...PUBLISHERS].reverse().concat([...PUBLISHERS].reverse()).map((pub, i) => (
+              <a
+                key={`rev-${pub.name}-${i}`}
+                href={pub.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="logo-marquee-item liquid-glass rounded-[16px]"
+                title={pub.name}
+                tabIndex={-1}
+              >
+                {pub.slug ? (
+                  <img
+                    src={`https://cdn.simpleicons.org/${pub.slug}`}
+                    alt=""
+                    width={132}
+                    height={36}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span className="logo-fallback">{pub.name}</span>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
         <p className="sr-only">
           Indexed publishers include Vercel, Microsoft, Stripe, n8n, GitHub, Google, Meta, Cloudflare,
           Anthropic, Better Auth, Remotion, and Callstack.
@@ -1015,7 +1348,143 @@ export default function HomeClient({ initialTrending = [] }) {
       </footer>
 
       </main>
-      <SkillDialog skill={selected} open={dialogOpen} onOpenChange={setDialogOpen} />
+      {compareList.length > 0 && (
+        <div className="fixed bottom-4 left-1/2 z-[80] flex -translate-x-1/2 items-center gap-3 rounded-full border border-white/10 bg-space/95 px-4 py-2 shadow-lg backdrop-blur">
+          <span className="font-mono text-[10px] uppercase text-cream/70">
+            Compare {compareList.length}/2
+          </span>
+          {compareList.map((s) => (
+            <span key={skillKey(s)} className="font-mono text-[10px] text-neon">{s.name}</span>
+          ))}
+          <button
+            type="button"
+            disabled={compareList.length < 2}
+            className="pressable rounded-full bg-neon px-3 py-1 font-grotesk text-[10px] uppercase text-space disabled:opacity-40"
+            onClick={() => setCompareOpen(true)}
+          >
+            Open
+          </button>
+          <button type="button" className="text-cream/50 hover:text-cream" onClick={() => setCompareList([])}>
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {toast && (
+        <div
+          role="status"
+          className="fixed bottom-20 left-1/2 z-[90] -translate-x-1/2 rounded-full bg-neon px-4 py-2 font-mono text-[11px] uppercase text-space shadow-lg"
+        >
+          {toast}
+        </div>
+      )}
+
+      {/* ⌘K command palette */}
+      {cmdOpen && (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/70 px-4 pt-[15vh]" onClick={() => setCmdOpen(false)}>
+          <div
+            className="liquid-glass w-full max-w-lg rounded-[24px] p-4"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label="Search skills"
+          >
+            <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+              <Search className="h-4 w-4 text-neon" />
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search skills…"
+                className="w-full bg-transparent font-mono text-sm text-cream outline-none placeholder:text-cream/40"
+              />
+              <kbd className="font-mono text-[10px] text-cream/40">ESC</kbd>
+            </div>
+            <ul className="mt-2 max-h-64 overflow-y-auto">
+              {(results || []).slice(0, 8).map((s) => (
+                <li key={skillKey(s)}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left hover:bg-white/5"
+                    onClick={() => {
+                      setCmdOpen(false);
+                      openSkill(s);
+                    }}
+                  >
+                    <span className="font-grotesk text-sm uppercase text-cream">{s.name}</span>
+                    <span className="font-mono text-[10px] text-cream/45">{s.owner}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* CLI modal */}
+      {cliOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4" onClick={() => setCliOpen(false)}>
+          <div className="liquid-glass w-full max-w-md rounded-[28px] p-6" onClick={(e) => e.stopPropagation()} role="dialog">
+            <div className="flex items-center justify-between">
+              <h3 className="font-grotesk text-xl uppercase text-cream">CLI quickstart</h3>
+              <button type="button" onClick={() => setCliOpen(false)} aria-label="Close">
+                <X className="h-4 w-4 text-cream/60" />
+              </button>
+            </div>
+            <ol className="mt-4 space-y-3 font-mono text-[12px] uppercase leading-relaxed text-cream/70">
+              <li>1. Open a skill and copy the install command.</li>
+              <li>2. Run it in your project terminal.</li>
+              <li>3. Your agent can load the skill from the install path.</li>
+            </ol>
+            <pre className="mt-4 overflow-x-auto rounded-[16px] bg-black/40 px-3 py-2 text-[11px] text-neon">npx skillforge add owner/repo/skill</pre>
+            <button
+              type="button"
+              className="pressable mt-4 w-full rounded-full bg-neon py-2.5 font-grotesk text-[11px] uppercase text-space"
+              onClick={async () => {
+                const ok = await copyText("npx skillforge add owner/repo/skill");
+                showToast(ok ? "Example command copied" : "Copy failed");
+              }}
+            >
+              Copy example
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Compare dialog */}
+      {compareOpen && compareList.length === 2 && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4" onClick={() => setCompareOpen(false)}>
+          <div className="liquid-glass grid w-full max-w-3xl gap-4 rounded-[28px] p-6 sm:grid-cols-2" onClick={(e) => e.stopPropagation()}>
+            {compareList.map((s) => (
+              <div key={skillKey(s)}>
+                <h3 className="font-grotesk text-lg uppercase text-cream">{s.name}</h3>
+                <p className="mt-1 font-mono text-[10px] uppercase text-cream/50">
+                  {s.owner}/{s.repo} · {(s.stars ?? 0).toLocaleString()}★
+                </p>
+                <p className="mt-3 text-sm text-cream/75">{descText(s)}</p>
+                <button
+                  type="button"
+                  className="pressable mt-4 rounded-full bg-neon px-3 py-1.5 font-grotesk text-[10px] uppercase text-space"
+                  onClick={async () => {
+                    const ok = await copyText(installCmd(s));
+                    showToast(ok ? `Copied ${s.name}` : "Copy failed");
+                  }}
+                >
+                  Copy install
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <SkillDialog
+        skill={selected}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onToast={showToast}
+        compareIds={compareIds}
+        onToggleCompare={toggleCompare}
+      />
     </div>
   );
 }
