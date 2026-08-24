@@ -55,6 +55,10 @@ async function skillsFromApi() {
 
 export default async function sitemap() {
   const staticRoutes = [
+    { url: `${SITE_URL}/privacy`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
+    { url: `${SITE_URL}/terms`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
+    { url: `${SITE_URL}/acceptable-use`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
+
     {
       url: SITE_URL,
       lastModified: new Date(),
