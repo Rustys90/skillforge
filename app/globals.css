@@ -783,3 +783,22 @@ button:disabled,
   .hero-cinematic-base { animation: none; }
   .hero-cinematic-video { display: none; }
 }
+
+
+.hero-canvas-field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+}
+.hero-cinematic-base {
+  z-index: 0;
+}
+.hero-cinematic-grade {
+  z-index: 2;
+}
+.hero-cinematic-video {
+  display: none !important; /* no shared page videos in hero */
+}
