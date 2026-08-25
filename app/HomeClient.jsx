@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { Search, Star, Terminal, ExternalLink, ChevronRight, Copy, Share2, Shield, Github, Command, X, GitCompare } from "lucide-react";
+import { Search, Star, Terminal, ExternalLink, ChevronRight, Copy, Share2, Shield, Github, Command, X, GitCompare, HelpCircle, Clock, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -36,6 +36,44 @@ const COLLECTIONS = [
   { id: "git", title: "Git & ship", tag: "git", blurb: "Repos, deploy, and shipping" },
   { id: "data", title: "Data", tag: "sql", blurb: "SQL, CSV, and tables" },
 ];
+
+const POPULAR_QUERIES = ["pdf", "browser", "git", "deploy", "docker", "whisper", "sql"];
+
+const FAQ_ITEMS = [
+  {
+    q: "What is a skill?",
+    a: "A skill is a SKILL.md (and helpers) that teaches an agent how to do a task. Browse the catalog, then install with one npx command.",
+    href: "#browse",
+  },
+  {
+    q: "Are skills safe?",
+    a: "We scan public GitHub skills before they surface, but scanning is best-effort. Always review upstream source before production use.",
+    href: "#trust",
+  },
+  {
+    q: "How do I install?",
+    a: "Open a skill, copy the install command, and run it in your project terminal. Your agent can then load the skill from that path.",
+    href: "#install",
+  },
+  {
+    q: "Where do rankings come from?",
+    a: "Daily, weekly, hot, and overall use install activity when volume is high enough; otherwise time-aware estimates from stars keep boards moving.",
+    href: "#trending",
+  },
+];
+
+function relativeTime(iso) {
+  if (!iso) return "recent";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "recent";
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 86400 * 14) return `${Math.floor(s / 86400)}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
 
 /** Trusted / frequently indexed publishers — logo marquee (Simple Icons CDN). */
 const PUBLISHERS = [
@@ -356,12 +394,41 @@ export default function HomeClient({ initialTrending = [] }) {
   const [compareList, setCompareList] = useState([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [typedCmd, setTypedCmd] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [featuredIdx, setFeaturedIdx] = useState(0);
+  const [openFaq, setOpenFaq] = useState(0);
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const searchRef = useRef(null);
   const showToast = (msg) => {
     setToast(msg);
     window.clearTimeout(showToast._t);
-    showToast._t = window.setTimeout(() => setToast(null), 2200);
+    showToast._t = window.setTimeout(() => setToast(null), 2800);
   };
+  const pushRecent = useCallback((q) => {
+    const v = String(q || "").trim();
+    if (!v) return;
+    setRecentSearches((prev) => {
+      const next = [v, ...prev.filter((x) => x.toLowerCase() !== v.toLowerCase())].slice(0, 6);
+      try {
+        localStorage.setItem("sf_recent_q", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
   const skillKey = (s) => String(s.id ?? `${s.owner}/${s.repo}/${s.name}`);
+  const featuredList = meta?.featuredPool?.length ? meta.featuredPool : (meta?.featured ? [meta.featured] : []);
+  const activeFeatured = featuredList.length
+    ? featuredList[((featuredIdx % featuredList.length) + featuredList.length) % featuredList.length]
+    : null;
+  const tagCountMap = useMemo(() => {
+    const m = {};
+    for (const row of meta?.tagCounts || []) m[row.tag] = row.count;
+    return m;
+  }, [meta]);
+
   const compareIds = new Set(compareList.map(skillKey));
   const toggleCompare = (s) => {
     setCompareList((prev) => {
@@ -379,11 +446,14 @@ export default function HomeClient({ initialTrending = [] }) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
-    const url = query.trim()
+    let url = query.trim()
       ? `/api/skills/search?q=${encodeURIComponent(query)}${activeTag ? `&tag=${encodeURIComponent(activeTag)}` : ""}`
       : activeTag
         ? `/api/skills/search?tag=${encodeURIComponent(activeTag)}&limit=20`
         : "/api/skills/trending?window=overall&limit=12";
+    if (ownerFilter) {
+      url = `/api/skills/search?q=${encodeURIComponent(ownerFilter)}&limit=24`;
+    }
     // Show skeletons immediately — don't wait for debounce
     setCatalogLoading(true);
     setCatalogError(null);
@@ -404,7 +474,7 @@ export default function HomeClient({ initialTrending = [] }) {
         .finally(() => setCatalogLoading(false));
     }, 200);
     return () => clearTimeout(t);
-  }, [query, activeTag]);
+  }, [query, activeTag, ownerFilter]);
 
   useEffect(() => {
     setTrendingLoading(true);
@@ -482,11 +552,24 @@ export default function HomeClient({ initialTrending = [] }) {
 
   useEffect(() => {
     const onKey = (e) => {
+      const tag = (e.target && e.target.tagName) || "";
+      const typing = tag === "INPUT" || tag === "TEXTAREA" || e.target?.isContentEditable;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setCmdOpen(true);
       }
-      if (e.key === "Escape") setCmdOpen(false);
+      if (!typing && e.key === "/" ) {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+      if (!typing && e.key === "?") {
+        e.preventDefault();
+        setHelpOpen((v) => !v);
+      }
+      if (e.key === "Escape") {
+        setCmdOpen(false);
+        setHelpOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -520,19 +603,33 @@ export default function HomeClient({ initialTrending = [] }) {
               {(meta?.totalSkills ?? "—").toLocaleString?.() ?? meta?.totalSkills ?? "—"} skills
             </span>
             <span className="hidden text-cream/30 sm:inline">·</span>
-            <span className="hidden sm:inline">
-              {(meta?.installsToday ?? 0).toLocaleString()} today
-              <span className="badge-live ml-1">live</span>
-            </span>
+            {(meta?.installsToday ?? 0) > 0 ? (
+              <span className="hidden sm:inline">
+                {(meta?.installsToday ?? 0).toLocaleString()} today
+                <span className="badge-live ml-1">live</span>
+              </span>
+            ) : (
+              <span className="hidden text-cream/40 sm:inline">installs warming up</span>
+            )}
           </div>
           <div className="logo-marquee min-w-0 flex-1" id="live-ticker" aria-label="Recent installs">
             <div className="logo-marquee-track" style={{ animationDuration: "28s" }}>
-              {[...(meta?.recentInstalls || []), ...(meta?.recentInstalls || [])].map((item, i) => (
+              {[
+                ...(meta?.recentInstalls || []).map((item) => ({ ...item, _kind: "install" })),
+                ...(meta?.newest || []).slice(0, 6).map((item) => ({ ...item, _kind: "new" })),
+              ]
+                .concat([])
+                .flatMap((x) => [x, x])
+                .map((item, i) => (
                 <span
-                  key={`inst-${i}-${item.name}`}
+                  key={`inst-${i}-${item.name}-${item._kind}`}
                   className="logo-marquee-item !min-w-0 !h-auto !py-0.5 font-mono text-[10px] uppercase tracking-wide text-cream/60"
                 >
-                  just installed <span className="text-neon">{item.name}</span>
+                  {item._kind === "new" ? (
+                    <>indexed <span className="text-neon">{item.name}</span></>
+                  ) : (
+                    <>installed <span className="text-neon">{item.name}</span></>
+                  )}
                 </span>
               ))}
               {!(meta?.recentInstalls?.length) && (
@@ -667,50 +764,126 @@ export default function HomeClient({ initialTrending = [] }) {
               className="relative mt-10 w-full max-w-xl lg:ml-16"
               onSubmit={(e) => {
                 e.preventDefault();
+                pushRecent(query);
+                setOwnerFilter("");
                 document.getElementById("browse")?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
             >
               <label htmlFor="skill-search" className="sr-only">
                 Search skills by name, tag, or description
               </label>
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cream/45" aria-hidden />
-              <input
-                id="skill-search"
-                name="q"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search skills — pdf, whisper, deploy, api…"
-                autoComplete="off"
-                spellCheck={false}
-                className="liquid-glass h-14 w-full rounded-[1.25rem] border border-white/10 bg-space/40 pl-12 pr-24 font-mono text-sm text-cream caret-neon placeholder:text-cream/35 transition focus:border-neon/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-neon/60 active:scale-[0.997]"
-              />
-              <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
-                {query ? (
+              <div className={cn("search-orbit liquid-glass rounded-[1.25rem]", searchFocused && "is-focused")}>
+                <Search className="pointer-events-none absolute left-4 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-neon/80" aria-hidden />
+                <input
+                  ref={searchRef}
+                  id="skill-search"
+                  name="q"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setOwnerFilter("");
+                  }}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => window.setTimeout(() => setSearchFocused(false), 160)}
+                  placeholder={`Search skills — try “${POPULAR_QUERIES[placeholderIdx]}”…`}
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="search-placeholder-anim relative z-[1] h-14 w-full rounded-[1.25rem] border-0 bg-transparent pl-12 pr-28 font-mono text-sm text-cream caret-neon placeholder:text-cream/40 focus:outline-none"
+                />
+                <div className="absolute right-2 top-1/2 z-[1] flex -translate-y-1/2 items-center gap-1">
+                  <kbd className="hidden rounded border border-white/10 px-1.5 py-0.5 font-mono text-[9px] text-cream/35 sm:inline">/</kbd>
+                  {query ? (
+                    <button
+                      type="button"
+                      aria-label="Clear search"
+                      onClick={() => {
+                        setQuery("");
+                        setOwnerFilter("");
+                      }}
+                      className="rounded-full px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wide text-cream/50 transition hover:bg-white/10 hover:text-cream"
+                    >
+                      Clear
+                    </button>
+                  ) : null}
                   <button
-                    type="button"
-                    aria-label="Clear search"
-                    onClick={() => setQuery("")}
-                    className="rounded-full px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wide text-cream/50 transition hover:bg-white/10 hover:text-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/50"
+                    type="submit"
+                    className="pressable rounded-full bg-neon px-3.5 py-2 font-grotesk text-[11px] uppercase tracking-wide text-space transition hover:opacity-90"
                   >
-                    Clear
+                    Search
                   </button>
-                ) : null}
-                <button
-                  type="submit"
-                  className="pressable rounded-full bg-neon px-3.5 py-2 font-grotesk text-[11px] uppercase tracking-wide text-space transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream/40"
-                >
-                  Search
-                </button>
+                </div>
               </div>
+              {(searchFocused || query) && (
+                <div className="panel absolute left-0 right-0 z-20 mt-2 p-3 shadow-xl">
+                  {recentSearches.length > 0 && (
+                    <div className="mb-2">
+                      <p className="mb-1 font-mono text-[9px] uppercase tracking-wide text-cream/40">Recent</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {recentSearches.map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            className="rounded-full border border-white/10 px-2.5 py-1 font-mono text-[10px] uppercase text-cream/70 hover:border-neon/40 hover:text-neon"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setQuery(r);
+                              setOwnerFilter("");
+                              pushRecent(r);
+                              document.getElementById("browse")?.scrollIntoView({ behavior: "smooth" });
+                            }}
+                          >
+                            <Clock className="mr-1 inline h-3 w-3" />
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <p className="mb-1 font-mono text-[9px] uppercase tracking-wide text-cream/40">Popular</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {POPULAR_QUERIES.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        className="rounded-full border border-white/10 px-2.5 py-1 font-mono text-[10px] uppercase text-cream/70 hover:border-neon/40 hover:text-neon"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setQuery(r);
+                          setOwnerFilter("");
+                          pushRecent(r);
+                          document.getElementById("browse")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </form>
 
 
             <div className="mt-4 flex gap-2 overflow-x-auto pb-2 lg:ml-16" style={{ scrollbarWidth: "thin" }}>
+              {(activeTag || ownerFilter) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTag("");
+                    setOwnerFilter("");
+                  }}
+                  className="tag-chip pressable inline-flex items-center gap-1 rounded-full border border-neon/40 bg-neon/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-neon"
+                >
+                  <X className="h-3 w-3" /> Clear filter
+                </button>
+              )}
               {TAGS.map((tag) => (
                 <button
                   key={tag}
                   type="button"
-                  onClick={() => setActiveTag((cur) => (cur === tag ? "" : tag))}
+                  onClick={() => {
+                    setOwnerFilter("");
+                    setActiveTag((cur) => (cur === tag ? "" : tag));
+                  }}
                   className={cn(
                     "tag-chip pressable rounded-full px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/50",
                     activeTag === tag
@@ -719,6 +892,11 @@ export default function HomeClient({ initialTrending = [] }) {
                   )}
                 >
                   {tag}
+                  {tagCountMap[tag] != null && (
+                    <span className={cn("ml-1 opacity-70", activeTag === tag ? "text-space/70" : "text-cream/45")}>
+                      {tagCountMap[tag]}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -888,39 +1066,75 @@ export default function HomeClient({ initialTrending = [] }) {
 
           
           {/* Featured skill of the day */}
-          {meta?.featured && (
+          {activeFeatured && (
             <article
               id="featured"
               className="featured-card parallax-card mb-8 cursor-pointer p-6 sm:p-8"
-              onClick={() => openSkill(meta.featured)}
+              onClick={() => openSkill(activeFeatured)}
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <p className="font-condiment text-xl text-neon sm:text-2xl">Skill of the day</p>
-                  <h3 className="mt-1 font-grotesk text-3xl uppercase tracking-wide text-cream sm:text-4xl">{meta.featured.name}</h3>
+                  <h3 className="mt-1 font-grotesk text-3xl uppercase tracking-wide text-cream sm:text-4xl">{activeFeatured.name}</h3>
                   <p className="mt-2 font-mono text-[11px] uppercase tracking-wide text-cream/50">
-                    {meta.featured.owner}/{meta.featured.repo} · {(meta.featured.stars ?? 0).toLocaleString()}★
+                    {activeFeatured.owner}/{activeFeatured.repo} · {(activeFeatured.stars ?? 0).toLocaleString()}★
                   </p>
-                  <p className="font-body mt-4 max-w-2xl text-[15px] leading-relaxed text-cream/80">{descText(meta.featured)}</p>
+                  <p className="font-body mt-4 max-w-2xl text-[15px] leading-relaxed text-cream/80">{descText(activeFeatured)}</p>
                 </div>
                 <div className="flex flex-col gap-2">
+                  <p className="font-body max-w-[14rem] text-left text-[12px] leading-snug text-cream/55">
+                    Why featured: high stars, clear description, and a strong fit for agent workflows.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="pressable rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase text-cream/70"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFeaturedIdx((i) => i - 1);
+                      }}
+                    >
+                      Prev
+                    </button>
+                    <button
+                      type="button"
+                      className="pressable rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase text-cream/70"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFeaturedIdx((i) => i + 1);
+                      }}
+                    >
+                      Next
+                    </button>
+                  </div>
                   <button
                     type="button"
                     className="pressable rounded-full bg-neon px-4 py-2 font-grotesk text-[11px] uppercase text-space"
                     onClick={async (e) => {
                       e.stopPropagation();
-                      const ok = await copyText(installCmd(meta.featured));
-                      showToast(ok ? "Install command copied" : "Copy failed");
+                      const ok = await copyText(installCmd(activeFeatured));
+                      showToast(ok ? "Copied · next: paste in terminal, then reload your agent" : "Copy failed");
                     }}
                   >
                     Copy install
                   </button>
                   <button
                     type="button"
-                    className="pressable liquid-glass rounded-full px-4 py-2 font-mono text-[11px] uppercase text-cream"
+                    className="pressable panel rounded-full px-4 py-2 font-mono text-[11px] uppercase text-cream"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const ok = await copyText(skillShareUrl(activeFeatured));
+                      showToast(ok ? "Skill link copied" : "Copy failed");
+                    }}
+                  >
+                    Share
+                  </button>
+                  <button
+                    type="button"
+                    className="pressable panel rounded-full px-4 py-2 font-mono text-[11px] uppercase text-cream"
                     onClick={(e) => {
                       e.stopPropagation();
-                      openSkill(meta.featured);
+                      openSkill(activeFeatured);
                     }}
                   >
                     Open skill
@@ -947,6 +1161,9 @@ export default function HomeClient({ initialTrending = [] }) {
                 <span>
                   <p className="font-grotesk text-sm uppercase tracking-wide text-cream">{c.title}</p>
                   <p className="font-body mt-1 text-[13px] leading-snug text-cream/55">{c.blurb}</p>
+                  {tagCountMap[c.tag] != null && (
+                    <p className="mt-2 font-mono text-[10px] uppercase text-neon/80">{tagCountMap[c.tag]} skills</p>
+                  )}
                 </span>
               </button>
             ))}
@@ -966,8 +1183,17 @@ export default function HomeClient({ initialTrending = [] }) {
                   >
                     <p className="truncate font-grotesk text-sm uppercase tracking-wide text-cream">{s.name}</p>
                     <p className="mt-1 truncate font-mono text-[10px] uppercase text-cream/45">
-                      {s.owner} · {(s.stars ?? 0).toLocaleString()}★
+                      {s.owner} · {(s.stars ?? 0).toLocaleString()}★ · {relativeTime(s.indexed_at || s.last_crawled_at)}
                     </p>
+                    {Array.isArray(s.tags) && s.tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {s.tags.slice(0, 3).map((tg) => (
+                          <span key={tg} className="rounded-full border border-white/10 px-1.5 py-0.5 font-mono text-[9px] uppercase text-cream/45">
+                            {tg}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -1010,20 +1236,60 @@ export default function HomeClient({ initialTrending = [] }) {
               <article
                 key={s.id || `${s.owner}-${s.name}`}
                 onClick={() => openSkill(s)}
-                className={`reveal liquid-glass cursor-pointer rounded-[var(--radius-bezel)] p-[18px] transition duration-300 hover:bg-white/[0.06] active:bg-white/[0.08] stagger-${Math.min(i + 1, 6)}`}
+                className={`group reveal liquid-glass cursor-pointer rounded-[var(--radius-bezel)] p-[18px] transition duration-300 hover:bg-white/[0.06] active:bg-white/[0.08] stagger-${Math.min(i + 1, 6)}`}
               >
                 <div className="flex min-h-[120px] flex-col justify-between rounded-[var(--radius-bezel)] bg-white/[0.03] p-5">
                   <div>
-                    <h3 className="font-grotesk text-xl uppercase tracking-wide text-cream">
-                      {s.name}
-                    </h3>
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-grotesk text-xl uppercase tracking-wide text-cream">
+                        {s.name}
+                      </h3>
+                      <span className="shrink-0 rounded-full border border-neon/25 bg-neon/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-neon">
+                        Scanned
+                      </span>
+                    </div>
                     <p className="mt-1 font-mono text-[11px] uppercase text-cream/50">
-                      {s.owner}/{s.repo}
+                      <button
+                        type="button"
+                        className="hover:text-neon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOwnerFilter(s.owner);
+                          setQuery(s.owner);
+                          setActiveTag("");
+                        }}
+                      >
+                        {s.owner}
+                      </button>
+                      /{s.repo}
                     </p>
                   </div>
-                  <p className="mt-3 line-clamp-2 font-mono text-xs leading-relaxed text-cream/70">
+                  <p className="font-body mt-3 line-clamp-2 text-[13px] leading-relaxed text-cream/70">
                     {descText(s)}
                   </p>
+                  <div className="skill-card-actions mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="pressable rounded-full bg-neon px-3 py-1 font-grotesk text-[10px] uppercase text-space"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const ok = await copyText(installCmd(s));
+                        showToast(ok ? "Copied · paste in terminal · reload agent" : "Copy failed");
+                      }}
+                    >
+                      <Copy className="mr-1 inline h-3 w-3" /> Copy
+                    </button>
+                    <button
+                      type="button"
+                      className="pressable rounded-full border border-white/15 px-3 py-1 font-mono text-[10px] uppercase text-cream/70"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCompare(s);
+                      }}
+                    >
+                      Compare
+                    </button>
+                  </div>
                 </div>
                 <div className="liquid-glass mt-4 flex items-center justify-between gap-3 rounded-[var(--radius-bezel)] px-5 py-4">
                   <div className="min-w-0 flex-1">
@@ -1287,7 +1553,7 @@ export default function HomeClient({ initialTrending = [] }) {
       </section>
 
 
-      <section id="faq" className="reveal border-t border-white/5 bg-space py-16 sm:py-20" aria-labelledby="faq-heading">
+      <section id="faq" className="reveal border-t border-white/5 py-20" aria-labelledby="faq-heading">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
           <p className="font-condiment text-2xl text-neon sm:text-3xl">Questions</p>
           <h2 id="faq-heading" className="font-grotesk text-[28px] uppercase leading-tight text-cream sm:text-[40px]">
@@ -1296,31 +1562,31 @@ export default function HomeClient({ initialTrending = [] }) {
           <p className="font-body mt-3 max-w-xl text-[14px] leading-relaxed text-cream/55">
             Straight answers for agent builders installing skills for the first time.
           </p>
-          <dl className="mt-10 space-y-6">
-            {[
-              {
-                q: "What is an agent skill?",
-                a: "A SKILL.md package that teaches coding agents how to run a task. SkillForge indexes public ones from GitHub.",
-              },
-              {
-                q: "How do I install one?",
-                a: "Open any skill, copy npx skillforge add owner/repo/skill, and run it in your terminal.",
-              },
-              {
-                q: "Are they scanned?",
-                a: "Yes. Risky patterns go to review instead of silent publish. Metrics marked live are measured; est. means star-derived until installs accumulate.",
-              },
-              {
-                q: "Where do skills come from?",
-                a: "Public GitHub only — community authors and orgs that publish SKILL.md files.",
-              },
-            ].map((item) => (
-              <div key={item.q} className="liquid-glass rounded-[var(--radius-bezel)] px-5 py-4">
-                <dt className="font-grotesk text-sm uppercase tracking-wide text-neon">{item.q}</dt>
-                <dd className="font-body mt-2 text-[14px] leading-relaxed text-cream/65">{item.a}</dd>
+          <div className="mt-8 space-y-3">
+            {FAQ_ITEMS.map((item, idx) => (
+              <div key={item.q} className="panel overflow-hidden">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between px-5 py-4 text-left"
+                  onClick={() => setOpenFaq((cur) => (cur === idx ? -1 : idx))}
+                  aria-expanded={openFaq === idx}
+                >
+                  <span className="font-grotesk text-sm uppercase tracking-wide text-cream">{item.q}</span>
+                  <ChevronRight className={cn("h-4 w-4 text-neon transition", openFaq === idx && "rotate-90")} />
+                </button>
+                <div className={cn("faq-answer", openFaq === idx && "is-open")}>
+                  <div>
+                    <p className="font-body px-5 pb-4 text-[14px] leading-relaxed text-cream/65">{item.a}</p>
+                    {item.href && (
+                      <a href={item.href} className="mb-4 ml-5 inline-block font-mono text-[10px] uppercase text-neon hover:underline">
+                        Jump to section →
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
-          </dl>
+          </div>
         </div>
       </section>
 
@@ -1436,6 +1702,11 @@ export default function HomeClient({ initialTrending = [] }) {
                 </a>
               </li>
               <li>
+                <a href="https://github.com/Rustys90/skillforge/issues" target="_blank" rel="noopener noreferrer" className="transition hover:text-neon focus-visible:text-neon">
+                  Report a skill
+                </a>
+              </li>
+              <li>
                 <a
                   href="https://github.com/Rustys90/skillforge"
                   target="_blank"
@@ -1455,23 +1726,34 @@ export default function HomeClient({ initialTrending = [] }) {
 
       </main>
       {compareList.length > 0 && (
-        <div className="fixed bottom-4 left-1/2 z-[80] flex -translate-x-1/2 items-center gap-3 rounded-full border border-white/10 bg-space/95 px-4 py-2 shadow-lg backdrop-blur">
-          <span className="font-mono text-[10px] uppercase text-cream/70">
-            Compare {compareList.length}/2
-          </span>
-          {compareList.map((s) => (
-            <span key={skillKey(s)} className="font-mono text-[10px] text-neon">{s.name}</span>
-          ))}
+        <div className="fixed bottom-4 left-1/2 z-[80] flex w-[min(96vw,28rem)] -translate-x-1/2 flex-col gap-2 rounded-[var(--radius-bezel)] border border-white/10 bg-space/95 p-3 shadow-lg backdrop-blur">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-[10px] uppercase text-cream/70">Compare {compareList.length}/2</span>
+            <button type="button" className="text-cream/50 hover:text-cream" onClick={() => setCompareList([])} aria-label="Clear compare">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[0, 1].map((slot) => {
+              const s = compareList[slot];
+              return (
+                <div key={slot} className="panel min-h-[3.5rem] px-2 py-2">
+                  {s ? (
+                    <p className="truncate font-mono text-[10px] uppercase text-neon">{s.name}</p>
+                  ) : (
+                    <p className="font-mono text-[10px] uppercase text-cream/35">Pick skill {slot + 1}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
           <button
             type="button"
             disabled={compareList.length < 2}
-            className="pressable rounded-full bg-neon px-3 py-1 font-grotesk text-[10px] uppercase text-space disabled:opacity-40"
+            className="pressable rounded-full bg-neon px-3 py-2 font-grotesk text-[10px] uppercase text-space disabled:opacity-40"
             onClick={() => setCompareOpen(true)}
           >
-            Open
-          </button>
-          <button type="button" className="text-cream/50 hover:text-cream" onClick={() => setCompareList([])}>
-            <X className="h-3.5 w-3.5" />
+            Open compare
           </button>
         </div>
       )}
@@ -1505,6 +1787,27 @@ export default function HomeClient({ initialTrending = [] }) {
               />
               <kbd className="font-mono text-[10px] text-cream/40">ESC</kbd>
             </div>
+            {recentSearches.length > 0 && (
+              <div className="mb-2 border-b border-white/10 pb-2">
+                <p className="mb-1 font-mono text-[9px] uppercase text-cream/40">Recent searches</p>
+                <div className="flex flex-wrap gap-1">
+                  {recentSearches.map((r) => (
+                    <button
+                      key={`cmd-${r}`}
+                      type="button"
+                      className="rounded-full border border-white/10 px-2 py-0.5 font-mono text-[10px] uppercase text-cream/70"
+                      onClick={() => {
+                        setQuery(r);
+                        setCmdOpen(false);
+                        document.getElementById("browse")?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <ul className="mt-2 max-h-64 overflow-y-auto">
               {(results || []).slice(0, 8).map((s) => (
                 <li key={skillKey(s)}>
@@ -1579,6 +1882,32 @@ export default function HomeClient({ initialTrending = [] }) {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        aria-label="Keyboard help"
+        className="fixed bottom-4 right-4 z-[70] flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-space/90 text-neon shadow-lg backdrop-blur transition hover:border-neon/40"
+        onClick={() => setHelpOpen(true)}
+      >
+        <HelpCircle className="h-5 w-5" />
+      </button>
+
+      {helpOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 px-4" onClick={() => setHelpOpen(false)}>
+          <div className="liquid-glass w-full max-w-md rounded-[var(--radius-bezel)] p-6" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Keyboard shortcuts">
+            <div className="flex items-center justify-between">
+              <h3 className="font-grotesk text-xl uppercase text-cream">Shortcuts</h3>
+              <button type="button" onClick={() => setHelpOpen(false)} aria-label="Close"><X className="h-4 w-4 text-cream/60" /></button>
+            </div>
+            <ul className="mt-4 space-y-2 font-mono text-[12px] uppercase text-cream/70">
+              <li><kbd className="text-neon">/</kbd> Focus search</li>
+              <li><kbd className="text-neon">⌘K</kbd> Command palette</li>
+              <li><kbd className="text-neon">?</kbd> This help</li>
+              <li><kbd className="text-neon">Esc</kbd> Close overlays</li>
+            </ul>
           </div>
         </div>
       )}
