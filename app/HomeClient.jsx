@@ -343,7 +343,7 @@ export default function HomeClient({ initialTrending = [] }) {
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("");
   const [results, setResults] = useState(initialTrending);
-  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogLoading, setCatalogLoading] = useState(() => !(initialTrending && initialTrending.length));
   const [catalogError, setCatalogError] = useState(null);
   const [totalResults, setTotalResults] = useState(null);
   const [tab, setTab] = useState("weekly");
@@ -384,9 +384,10 @@ export default function HomeClient({ initialTrending = [] }) {
       : activeTag
         ? `/api/skills/search?tag=${encodeURIComponent(activeTag)}&limit=20`
         : "/api/skills/trending?window=overall&limit=12";
+    // Show skeletons immediately — don't wait for debounce
+    setCatalogLoading(true);
+    setCatalogError(null);
     const t = setTimeout(() => {
-      setCatalogLoading(true);
-      setCatalogError(null);
       fetch(url)
         .then((r) => {
           if (!r.ok) throw new Error("search failed");
@@ -401,7 +402,7 @@ export default function HomeClient({ initialTrending = [] }) {
           setCatalogError("Could not load skills. Check your connection and try again.");
         })
         .finally(() => setCatalogLoading(false));
-    }, 250);
+    }, 200);
     return () => clearTimeout(t);
   }, [query, activeTag]);
 
@@ -981,20 +982,20 @@ export default function HomeClient({ initialTrending = [] }) {
             >
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={`sk-${i}`} className="liquid-glass rounded-[var(--radius-bezel)] p-[18px]">
-                  <div className="flex min-h-[120px] flex-col justify-between rounded-[var(--radius-bezel)] bg-white/[0.03] p-5">
-                    <div>
-                      <div className="skeleton h-5 w-2/5 max-w-[9rem]" />
-                      <div className="skeleton mt-2 h-3 w-1/3 max-w-[6rem]" />
+                  <div className="flex min-h-[132px] flex-col justify-between rounded-[var(--radius-bezel)] bg-white/[0.04] p-5">
+                    <div className="w-full">
+                      <div className="skeleton h-5 w-36" />
+                      <div className="skeleton mt-2 h-3 w-24" />
                     </div>
-                    <div className="mt-4 space-y-2">
+                    <div className="mt-4 w-full space-y-2">
                       <div className="skeleton h-3 w-full" />
-                      <div className="skeleton h-3 w-4/5" />
+                      <div className="skeleton h-3 w-4/5 max-w-[14rem]" />
                     </div>
                   </div>
-                  <div className="mt-4 flex gap-4 rounded-[var(--radius-bezel)] px-2 py-4">
-                    <div className="skeleton h-8 w-16" />
-                    <div className="skeleton h-8 w-16" />
-                    <div className="skeleton h-8 w-16" />
+                  <div className="mt-4 flex gap-4 px-2 py-3">
+                    <div className="skeleton h-9 w-16" />
+                    <div className="skeleton h-9 w-16" />
+                    <div className="skeleton h-9 w-16" />
                   </div>
                 </div>
               ))}
@@ -1124,8 +1125,8 @@ export default function HomeClient({ initialTrending = [] }) {
                   <li key={`ts-${i}`} className="flex items-center gap-4 px-5 py-4">
                     <div className="skeleton h-8 w-8 shrink-0 rounded-full" />
                     <div className="min-w-0 flex-1 space-y-2">
-                      <div className="skeleton h-4 w-1/3 max-w-[10rem]" />
-                      <div className="skeleton h-3 w-1/4 max-w-[7rem]" />
+                      <div className="skeleton h-4 w-40" />
+                      <div className="skeleton h-3 w-28" />
                     </div>
                     <div className="skeleton h-3 w-20" />
                   </li>
