@@ -624,3 +624,28 @@ button:disabled,
 .faq-answer > div {
   overflow: hidden;
 }
+
+
+/* Publisher logos — real brand marks */
+.logo-marquee-item {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem !important;
+  height: 3.25rem !important;
+  padding: 0.5rem 0.85rem !important;
+}
+.logo-marquee-item img {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.08);
+}
+@media (max-width: 640px) {
+  .featured-card h3 {
+    font-size: 1.35rem !important;
+    line-height: 1.15 !important;
+    word-break: break-word;
+  }
+}
