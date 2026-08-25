@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Search, Star, Terminal, ExternalLink, ChevronRight, Copy, Share2, Shield, Github, Command, X, GitCompare, HelpCircle, Clock, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import HeroSpaceBg from "@/components/HeroSpaceBg";
 import {
   Dialog,
   DialogContent,
@@ -389,7 +390,6 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
   const [trending, setTrending] = useState(initialWeekly.length ? initialWeekly : []);
   const [trendingLoading, setTrendingLoading] = useState(true);
   const [meta, setMeta] = useState(initialMeta);
-  const [heroVideoEnabled, setHeroVideoEnabled] = useState(false);
   const [toast, setToast] = useState(null);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [cliOpen, setCliOpen] = useState(false);
@@ -574,17 +574,6 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
     } catch {}
   }, []);
 
-  // Hero video: load only when motion is OK and connection isn't constrained (mobile-friendly)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const saveData = navigator.connection?.saveData;
-    const slow = /2g|slow-2g/.test(navigator.connection?.effectiveType || "");
-    if (reduce || saveData || slow) return;
-    // Defer so first paint stays light
-    const id = window.setTimeout(() => setHeroVideoEnabled(true), 400);
-    return () => window.clearTimeout(id);
-  }, []);
 
   // Keep total skills / installs / newest in sync as the crawler publishes
   useEffect(() => {
@@ -707,36 +696,11 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
 
 
       <section className="relative min-h-[100svh] overflow-hidden rounded-b-[24px] sm:rounded-b-[32px]" aria-label="Hero">
-        {/* Always-on poster so mobile never shows a blank frame while video buffers */}
-        <div
-          className="absolute inset-0 bg-gradient-to-br from-[#010828] via-[#061a4a] to-[#010828]"
-          aria-hidden
-        />
-        <div
-          className="absolute inset-0 opacity-40"
-          style={{
-            backgroundImage:
-              "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(111,255,0,0.12), transparent), radial-gradient(ellipse 60% 40% at 80% 60%, rgba(80,120,255,0.15), transparent)",
-          }}
-          aria-hidden
-        />
-        {heroVideoEnabled && (
-          <video
-            className="motion-safe-video absolute inset-0 h-full w-full object-cover"
-            src={HERO_VIDEO}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            aria-hidden
-            onError={() => setHeroVideoEnabled(false)}
-          />
-        )}
+        <HeroSpaceBg />
         <div className="hero-grade-tint" aria-hidden />
         <div className="hero-grade" aria-hidden />
-        <div className="absolute inset-0 bg-gradient-to-b from-space/70 via-space/45 to-space/85" />
-        <div className="absolute inset-0 bg-space/25" />
+        <div className="absolute inset-0 bg-gradient-to-b from-space/55 via-space/35 to-space/80 pointer-events-none" />
+        <div className="absolute inset-0 bg-space/20 pointer-events-none" />
         <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-content flex-col px-4 py-6 sm:px-10 sm:py-8 lg:px-16">
           <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center justify-between gap-3">
