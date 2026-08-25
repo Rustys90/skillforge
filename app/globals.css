@@ -519,3 +519,81 @@ button:disabled,
     row-gap: 1rem;
   }
 }
+
+
+/* Animated search bar */
+.search-orbit {
+  position: relative;
+  transition: box-shadow 280ms ease, transform 280ms ease, border-color 280ms ease;
+}
+.search-orbit::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(111, 255, 0, 0.15) 40%,
+    rgba(239, 244, 255, 0.35) 50%,
+    rgba(111, 255, 0, 0.15) 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.55;
+  animation: search-sheen 4.5s linear infinite;
+}
+.search-orbit.is-focused {
+  transform: scale(1.02);
+  box-shadow: 0 0 0 1px rgba(111, 255, 0, 0.35), 0 0 28px rgba(111, 255, 0, 0.12);
+}
+.search-orbit.is-focused::after {
+  opacity: 1;
+  animation-duration: 2.2s;
+}
+@keyframes search-sheen {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.search-placeholder-anim::placeholder {
+  transition: opacity 200ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-orbit::after {
+    animation: none;
+  }
+  .search-orbit.is-focused {
+    transform: none;
+  }
+}
+
+.skill-card-actions {
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.group:hover .skill-card-actions,
+.group:focus-within .skill-card-actions {
+  opacity: 1;
+}
+@media (hover: none) {
+  .skill-card-actions {
+    opacity: 1;
+  }
+}
+
+.faq-answer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 280ms ease;
+}
+.faq-answer.is-open {
+  grid-template-rows: 1fr;
+}
+.faq-answer > div {
+  overflow: hidden;
+}
