@@ -544,10 +544,34 @@ export default function HomeClient({ initialTrending = [] }) {
   };
 
   useEffect(() => {
-    fetch("/api/skills/meta")
-      .then((r) => r.json())
-      .then((d) => setMeta(d))
-      .catch(() => setMeta(null));
+    try {
+      const raw = localStorage.getItem("sf_recent_q");
+      if (raw) setRecentSearches(JSON.parse(raw).slice(0, 6));
+    } catch {}
+  }, []);
+
+  // Keep total skills / installs / newest in sync as the crawler publishes
+  useEffect(() => {
+    let cancelled = false;
+    const loadMeta = () => {
+      fetch("/api/skills/meta", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => {
+          if (!cancelled && d && !d.error) setMeta(d);
+        })
+        .catch(() => {});
+    };
+    loadMeta();
+    const id = window.setInterval(loadMeta, 30_000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") loadMeta();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, []);
 
   useEffect(() => {
@@ -600,7 +624,10 @@ export default function HomeClient({ initialTrending = [] }) {
         <div className="mx-auto flex max-w-content items-center gap-4 px-4 py-1.5 sm:px-10">
           <div className="flex shrink-0 items-center gap-2 font-mono text-[10px] uppercase tracking-wide text-cream/55">
             <span className="text-neon/90">
-              {(meta?.totalSkills ?? "—").toLocaleString?.() ?? meta?.totalSkills ?? "—"} skills
+              <span className="tabular-nums transition-opacity duration-300">
+                {meta?.totalSkills != null ? Number(meta.totalSkills).toLocaleString() : "—"}
+              </span>{" "}
+              skills
             </span>
             <span className="hidden text-cream/30 sm:inline">·</span>
             {(meta?.installsToday ?? 0) > 0 ? (
