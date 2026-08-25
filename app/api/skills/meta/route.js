@@ -10,7 +10,7 @@ export async function GET(request) {
   try {
     const meta = await getRegistryMeta();
     return Response.json(meta, {
-      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+      headers: { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30, max-age=0" },
     });
   } catch (err) {
     console.error("[api/meta]", err.message);
