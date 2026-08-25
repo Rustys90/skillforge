@@ -78,18 +78,18 @@ function relativeTime(iso) {
 
 /** Trusted / frequently indexed publishers — logo marquee (Simple Icons CDN). */
 const PUBLISHERS = [
-  { name: "Vercel", slug: "vercel", href: "https://github.com/vercel" },
-  { name: "Microsoft", slug: "microsoft", href: "https://github.com/microsoft" },
-  { name: "Stripe", slug: "stripe", href: "https://github.com/stripe" },
-  { name: "n8n", slug: "n8n", href: "https://github.com/n8n-io" },
-  { name: "GitHub", slug: "github", href: "https://github.com" },
-  { name: "Google", slug: "google", href: "https://github.com/google" },
-  { name: "Meta", slug: "meta", href: "https://github.com/facebook" },
-  { name: "Cloudflare", slug: "cloudflare", href: "https://github.com/cloudflare" },
-  { name: "Anthropic", slug: null, href: "https://github.com/anthropics" },
-  { name: "Better Auth", slug: null, href: "https://github.com/better-auth" },
-  { name: "Remotion", slug: null, href: "https://github.com/remotion-dev" },
-  { name: "Callstack", slug: null, href: "https://github.com/callstackincubator" },
+  { name: "Vercel", logo: "https://github.com/vercel.png", href: "https://github.com/vercel" },
+  { name: "Microsoft", logo: "https://github.com/microsoft.png", href: "https://github.com/microsoft" },
+  { name: "Stripe", logo: "https://github.com/stripe.png", href: "https://github.com/stripe" },
+  { name: "n8n", logo: "https://github.com/n8n-io.png", href: "https://github.com/n8n-io" },
+  { name: "GitHub", logo: "https://github.com/github.png", href: "https://github.com" },
+  { name: "Google", logo: "https://github.com/google.png", href: "https://github.com/google" },
+  { name: "Meta", logo: "https://github.com/facebook.png", href: "https://github.com/facebook" },
+  { name: "Cloudflare", logo: "https://github.com/cloudflare.png", href: "https://github.com/cloudflare" },
+  { name: "Anthropic", logo: "https://github.com/anthropics.png", href: "https://github.com/anthropics" },
+  { name: "Better Auth", logo: "https://github.com/better-auth.png", href: "https://github.com/better-auth" },
+  { name: "Remotion", logo: "https://github.com/remotion-dev.png", href: "https://github.com/remotion-dev" },
+  { name: "Callstack", logo: "https://github.com/callstackincubator.png", href: "https://github.com/callstackincubator" },
 ];
 
 
@@ -389,6 +389,7 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
   const [trending, setTrending] = useState(initialWeekly.length ? initialWeekly : []);
   const [trendingLoading, setTrendingLoading] = useState(true);
   const [meta, setMeta] = useState(initialMeta);
+  const [heroVideoEnabled, setHeroVideoEnabled] = useState(false);
   const [toast, setToast] = useState(null);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [cliOpen, setCliOpen] = useState(false);
@@ -573,6 +574,18 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
     } catch {}
   }, []);
 
+  // Hero video: load only when motion is OK and connection isn't constrained (mobile-friendly)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const saveData = navigator.connection?.saveData;
+    const slow = /2g|slow-2g/.test(navigator.connection?.effectiveType || "");
+    if (reduce || saveData || slow) return;
+    // Defer so first paint stays light
+    const id = window.setTimeout(() => setHeroVideoEnabled(true), 400);
+    return () => window.clearTimeout(id);
+  }, []);
+
   // Keep total skills / installs / newest in sync as the crawler publishes
   useEffect(() => {
     let cancelled = false;
@@ -693,25 +706,38 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
       </div>
 
 
-      <section className="relative min-h-screen overflow-hidden rounded-b-[32px]" aria-label="Hero">
-        <video
-          className="motion-safe-video absolute inset-0 h-full w-full object-cover"
-          src={HERO_VIDEO}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          fetchPriority="high"
+      <section className="relative min-h-[100svh] overflow-hidden rounded-b-[24px] sm:rounded-b-[32px]" aria-label="Hero">
+        {/* Always-on poster so mobile never shows a blank frame while video buffers */}
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-[#010828] via-[#061a4a] to-[#010828]"
           aria-hidden
         />
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{
+            backgroundImage:
+              "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(111,255,0,0.12), transparent), radial-gradient(ellipse 60% 40% at 80% 60%, rgba(80,120,255,0.15), transparent)",
+          }}
+          aria-hidden
+        />
+        {heroVideoEnabled && (
+          <video
+            className="motion-safe-video absolute inset-0 h-full w-full object-cover"
+            src={HERO_VIDEO}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            aria-hidden
+            onError={() => setHeroVideoEnabled(false)}
+          />
+        )}
         <div className="hero-grade-tint" aria-hidden />
         <div className="hero-grade" aria-hidden />
-        <div className="motion-reduce-fallback absolute inset-0 bg-gradient-to-br from-space via-[#02103a] to-space" aria-hidden />
-        {/* Stronger cinematic veil — keeps type readable, hides busy footage */}
-        <div className="absolute inset-0 bg-gradient-to-b from-space/70 via-space/50 to-space/80" />
-        <div className="absolute inset-0 bg-space/30" />
-        <div className="relative z-10 mx-auto flex min-h-screen max-w-content flex-col px-6 py-8 sm:px-10 lg:px-16">
+        <div className="absolute inset-0 bg-gradient-to-b from-space/70 via-space/45 to-space/85" />
+        <div className="absolute inset-0 bg-space/25" />
+        <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-content flex-col px-4 py-6 sm:px-10 sm:py-8 lg:px-16">
           <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center justify-between gap-3">
               <Link href="/" className="font-grotesk text-[16px] uppercase tracking-wide text-cream">
@@ -734,7 +760,7 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
                 </button>
               </div>
             </div>
-            <nav className="mobile-nav-strip lg:hidden" aria-label="Mobile">
+            <nav className="mobile-nav-strip flex flex-wrap gap-1.5 lg:hidden" aria-label="Mobile">
               {NAV.filter((n) => !n.external).map((item) => (
                 <a
                   key={`m-${item.label}`}
@@ -1016,37 +1042,7 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
       </section>
 
       {/* GEO/AEO citable prose — server-friendly facts */}
-      <section id="what-is" className="border-b border-white/5 bg-space py-14 sm:py-16" aria-labelledby="what-is-heading">
-        <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
-          <h2 id="what-is-heading" className="font-display-alt text-[24px] font-semibold uppercase tracking-wide text-cream sm:text-[32px]">
-            What SkillForge indexes
-          </h2>
-          <div className="font-body mt-4 max-w-3xl space-y-3 text-[15px] leading-relaxed text-cream/70">
-            <p>
-              SkillForge is a living index of <strong className="text-cream">AI agent skills</strong> published
-              as public <code className="rounded bg-white/10 px-1 font-mono text-[12px] text-neon">SKILL.md</code>{" "}
-              files on GitHub. As of the latest crawl, the registry holds{" "}
-              <strong className="text-cream">{(meta?.totalSkills ?? "thousands of").toLocaleString?.() ?? meta?.totalSkills ?? "thousands of"}</strong>{" "}
-              skills. Each entry is safety-scanned for high-risk patterns before auto-publish.
-            </p>
-            <p>
-              Developers install skills with one command:{" "}
-              <code className="rounded bg-white/10 px-1 font-mono text-[12px] text-neon">npx skillforge add owner/repo/skill</code>.
-              Rankings use real CLI installs when volume is meaningful; otherwise time-aware estimates from
-              repository stars are shown and clearly labeled.
-            </p>
-            <p>
-              Explore by{" "}
-              <a href="/categories/pdf" className="text-neon hover:underline">PDF</a>,{" "}
-              <a href="/categories/browser" className="text-neon hover:underline">browser</a>,{" "}
-              <a href="/categories/git" className="text-neon hover:underline">git</a>, or{" "}
-              <a href="/categories/sql" className="text-neon hover:underline">SQL</a> categories — or read the{" "}
-              <a href="/faq" className="text-neon hover:underline">FAQ</a> and{" "}
-              <a href="/trust" className="text-neon hover:underline">trust methodology</a>.
-            </p>
-          </div>
-        </div>
-      </section>
+      
 
       <section id="browse" className="bg-space py-20 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
@@ -1149,30 +1145,34 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
           )}
 
           
-          {/* Featured skill of the day */}
+          {/* Featured skill of the day — mobile-first */}
           {activeFeatured && (
             <article
               id="featured"
-              className="featured-card parallax-card mb-8 cursor-pointer p-6 sm:p-8"
+              className="featured-card parallax-card mb-8 cursor-pointer overflow-hidden p-4 sm:p-6 lg:p-8"
               onClick={() => openSkill(activeFeatured)}
             >
-              <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
                 <div className="min-w-0 flex-1">
-                  <p className="font-condiment text-xl text-neon sm:text-2xl">Skill of the day</p>
-                  <h3 className="mt-1 font-grotesk text-3xl uppercase tracking-wide text-cream sm:text-4xl">{activeFeatured.name}</h3>
-                  <p className="mt-2 font-mono text-[11px] uppercase tracking-wide text-cream/50">
+                  <p className="font-condiment text-lg text-neon sm:text-xl lg:text-2xl">Skill of the day</p>
+                  <h3 className="mt-1 break-words font-grotesk text-[22px] uppercase leading-tight tracking-wide text-cream sm:text-3xl lg:text-4xl">
+                    {activeFeatured.name}
+                  </h3>
+                  <p className="mt-2 break-all font-mono text-[10px] uppercase tracking-wide text-cream/50 sm:text-[11px]">
                     {activeFeatured.owner}/{activeFeatured.repo} · {(activeFeatured.stars ?? 0).toLocaleString()}★
                   </p>
-                  <p className="font-body mt-4 max-w-2xl text-[15px] leading-relaxed text-cream/80">{descText(activeFeatured)}</p>
+                  <p className="font-body mt-3 line-clamp-4 text-[14px] leading-relaxed text-cream/80 sm:mt-4 sm:line-clamp-none sm:text-[15px]">
+                    {descText(activeFeatured)}
+                  </p>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <p className="font-body max-w-[14rem] text-left text-[12px] leading-snug text-cream/55">
+                <div className="flex w-full shrink-0 flex-col gap-2 lg:w-[13.5rem]">
+                  <p className="font-body text-[12px] leading-snug text-cream/55 lg:max-w-[14rem]">
                     Why featured: high stars, clear description, and a strong fit for agent workflows.
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex gap-2">
                     <button
                       type="button"
-                      className="pressable rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase text-cream/70"
+                      className="pressable flex-1 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase text-cream/70 sm:flex-none"
                       onClick={(e) => {
                         e.stopPropagation();
                         setFeaturedIdx((i) => i - 1);
@@ -1182,7 +1182,7 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
                     </button>
                     <button
                       type="button"
-                      className="pressable rounded-full border border-white/15 px-3 py-1.5 font-mono text-[10px] uppercase text-cream/70"
+                      className="pressable flex-1 rounded-full border border-white/15 px-3 py-2 font-mono text-[10px] uppercase text-cream/70 sm:flex-none"
                       onClick={(e) => {
                         e.stopPropagation();
                         setFeaturedIdx((i) => i + 1);
@@ -1193,18 +1193,18 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
                   </div>
                   <button
                     type="button"
-                    className="pressable rounded-full bg-neon px-4 py-2 font-grotesk text-[11px] uppercase text-space"
+                    className="pressable w-full rounded-full bg-neon px-4 py-2.5 font-grotesk text-[11px] uppercase text-space"
                     onClick={async (e) => {
                       e.stopPropagation();
                       const ok = await copyText(installCmd(activeFeatured));
-                      showToast(ok ? "Copied · next: paste in terminal, then reload your agent" : "Copy failed");
+                      showToast(ok ? "Copied · paste in terminal · reload agent" : "Copy failed");
                     }}
                   >
                     Copy install
                   </button>
                   <button
                     type="button"
-                    className="pressable panel rounded-full px-4 py-2 font-mono text-[11px] uppercase text-cream"
+                    className="pressable w-full rounded-full border border-white/15 px-4 py-2.5 font-mono text-[11px] uppercase text-cream"
                     onClick={async (e) => {
                       e.stopPropagation();
                       const ok = await copyText(skillShareUrl(activeFeatured));
@@ -1213,16 +1213,13 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
                   >
                     Share
                   </button>
-                  <button
-                    type="button"
-                    className="pressable panel rounded-full px-4 py-2 font-mono text-[11px] uppercase text-cream"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openSkill(activeFeatured);
-                    }}
+                  <Link
+                    href={skillHref(activeFeatured)}
+                    className="pressable block w-full rounded-full border border-white/15 px-4 py-2.5 text-center font-mono text-[11px] uppercase text-cream"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     Open skill
-                  </button>
+                  </Link>
                 </div>
               </div>
             </article>
@@ -1699,18 +1696,23 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
                 title={pub.name}
                 tabIndex={i < PUBLISHERS.length ? 0 : -1}
               >
-                {pub.slug ? (
-                  <img
-                    src={`https://cdn.simpleicons.org/${pub.slug}`}
-                    alt={`${pub.name} logo`}
-                    width={132}
-                    height={36}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <span className="logo-fallback">{pub.name}</span>
-                )}
+                <img
+                  src={pub.logo}
+                  alt={`${pub.name} logo`}
+                  width={40}
+                  height={40}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-9 w-9 rounded-full object-cover bg-white/10"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    const fb = e.currentTarget.nextElementSibling;
+                    if (fb) fb.hidden = false;
+                  }}
+                />
+                <span className="logo-fallback font-ui text-[11px] font-semibold text-cream" hidden>
+                  {pub.name}
+                </span>
               </a>
             ))}
           </div>
@@ -1727,18 +1729,23 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
                 title={pub.name}
                 tabIndex={-1}
               >
-                {pub.slug ? (
-                  <img
-                    src={`https://cdn.simpleicons.org/${pub.slug}`}
-                    alt={`${pub.name} logo`}
-                    width={132}
-                    height={36}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <span className="logo-fallback">{pub.name}</span>
-                )}
+                <img
+                  src={pub.logo}
+                  alt={`${pub.name} logo`}
+                  width={40}
+                  height={40}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-9 w-9 rounded-full object-cover bg-white/10"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    const fb = e.currentTarget.nextElementSibling;
+                    if (fb) fb.hidden = false;
+                  }}
+                />
+                <span className="logo-fallback font-ui text-[11px] font-semibold text-cream" hidden>
+                  {pub.name}
+                </span>
               </a>
             ))}
           </div>
@@ -1749,7 +1756,36 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
         </p>
       </section>
 
-      <footer className="border-t border-white/5 px-6 py-12" role="contentinfo">
+      
+      <section id="what-is" className="border-t border-white/5 bg-space/80 py-12 sm:py-14" aria-labelledby="what-is-heading">
+        <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
+          <h2 id="what-is-heading" className="font-display-alt text-lg font-semibold uppercase tracking-wide text-cream/90 sm:text-xl">
+            What SkillForge indexes
+          </h2>
+          <div className="font-body mt-3 max-w-3xl space-y-2 text-[13px] leading-relaxed text-cream/55 sm:text-[14px]">
+            <p>
+              SkillForge is a living index of <strong className="text-cream/80">AI agent skills</strong> published
+              as public <code className="rounded bg-white/10 px-1 font-mono text-[11px] text-neon">SKILL.md</code>{" "}
+              files on GitHub. As of the latest crawl, the registry holds{" "}
+              <strong className="text-cream/80">{(meta?.totalSkills ?? "thousands of").toLocaleString?.() ?? meta?.totalSkills ?? "thousands of"}</strong>{" "}
+              skills. Each entry is safety-scanned for high-risk patterns before auto-publish.
+            </p>
+            <p>
+              Install with{" "}
+              <code className="rounded bg-white/10 px-1 font-mono text-[11px] text-neon">npx skillforge add owner/repo/skill</code>.
+              Rankings use real CLI installs when volume is meaningful; otherwise time-aware estimates from
+              repository stars are labeled clearly. Explore{" "}
+              <a href="/categories/pdf" className="text-neon hover:underline">PDF</a>,{" "}
+              <a href="/categories/browser" className="text-neon hover:underline">browser</a>,{" "}
+              <a href="/categories/git" className="text-neon hover:underline">git</a>,{" "}
+              <a href="/faq" className="text-neon hover:underline">FAQ</a>, and{" "}
+              <a href="/trust" className="text-neon hover:underline">trust</a>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+<footer className="border-t border-white/5 px-6 py-12" role="contentinfo">
         <div className="mx-auto flex max-w-content flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="font-grotesk text-sm uppercase tracking-wide text-cream">SkillForge</p>
