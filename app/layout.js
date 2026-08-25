@@ -64,7 +64,8 @@ const websiteLd = {
   name: "SkillForge",
   url: SITE_URL,
   description:
-    "The agent skill registry — find and install AI agent skills from public GitHub.",
+    "The agent skill registry — find and install AI agent skills from public GitHub. Safety-scanned SKILL.md packages with one-command install.",
+  inLanguage: "en",
   potentialAction: {
     "@type": "SearchAction",
     target: {
@@ -110,7 +111,7 @@ const faqLd = {
       name: "Are SkillForge skills safety-scanned?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. Skills are scanned for risky patterns before publish. Flagged skills go to review instead of silent publish. Install metrics are labeled live or estimated.",
+        text: "Yes. Skills are scanned for risky patterns before publish. Block-severity findings are not auto-published; review flags may still publish for high-star or trusted sources. Install metrics are labeled live (when install volume is meaningful) or estimated from repository stars.",
       },
     },
     {
@@ -129,12 +130,52 @@ const softwareLd = {
   "@type": "SoftwareApplication",
   name: "SkillForge",
   applicationCategory: "DeveloperApplication",
+  applicationSubCategory: "AI agent skill registry",
   operatingSystem: "Any",
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   description:
-    "Browse and install agent skills with npx skillforge add. Safety-scanned catalog from public GitHub.",
+    "Browse and install agent skills with npx skillforge add. Safety-scanned catalog from public GitHub. Thousands of SKILL.md packages ranked by activity.",
   url: SITE_URL,
+  featureList: [
+    "Search public agent skills",
+    "Safety pattern scanning",
+    "One-command CLI install",
+    "Daily weekly and hot rankings",
+    "Install metrics labeled live or estimated",
+  ],
+  softwareHelp: {
+    "@type": "WebPage",
+    url: `${SITE_URL}/#install`,
+    name: "Install agent skills",
+  },
 };
+
+const datasetLd = {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  name: "SkillForge agent skill index",
+  description:
+    "Continuously updated index of public AI agent skills (SKILL.md) discovered on GitHub, with safety scan signals and install metrics.",
+  url: SITE_URL,
+  license: "https://github.com/Rustys90/skillforge",
+  creator: { "@type": "Organization", name: "SkillForge", url: SITE_URL },
+  isAccessibleForFree: true,
+  keywords: [
+    "AI agent skills",
+    "SKILL.md",
+    "Claude skills",
+    "Cursor agent",
+    "agent skill registry",
+  ],
+};
+
+function safeJsonLd(obj) {
+  return JSON.stringify(obj)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
 
 export default function RootLayout({ children }) {
   return (
@@ -148,19 +189,23 @@ export default function RootLayout({ children }) {
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteLd) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(orgLd) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(softwareLd) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(faqLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(datasetLd) }}
         />
       </head>
       <body className="min-h-screen bg-space antialiased">{children}</body>
