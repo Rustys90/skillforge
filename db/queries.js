@@ -560,6 +560,8 @@ export async function getTagCounts(limit = 40) {
     `SELECT lower(tag) AS tag, COUNT(*)::int AS count
      FROM skills s, unnest(COALESCE(s.tags, ARRAY[]::text[])) AS tag
      WHERE s.duplicate_of IS NULL
+       AND lower(tag) NOT IN ('seed', 'skill', 'skills')
+       AND length(tag) > 1
      GROUP BY 1
      ORDER BY count DESC
      LIMIT $1`,
