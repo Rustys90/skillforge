@@ -569,3 +569,66 @@ export async function getTagCounts(limit = 40) {
   );
   return rows;
 }
+
+
+/** Promote pending rows that pass auto-publish policy into skills. */
+export async function promotePublishablePending(limit = 40) {
+  const { rows } = await query(
+    `SELECT id, name, description, has_real_desc, owner, repo, path, stars,
+            license_spdx_id, content_hash, raw_url, tags, source, repo_updated_at,
+            flag_reasons, raw_content
+     FROM pending_skills
+     WHERE status = 'pending'
+     ORDER BY stars DESC NULLS LAST, created_at ASC
+     LIMIT $1`,
+    [limit]
+  );
+  let published = 0;
+  for (const row of rows) {
+    const flagReasons = row.flag_reasons || [];
+    // dynamic import avoided — caller passes canAutoPublish
+    // This function only upserts; caller filters
+    await upsertSkill({
+      name: row.name,
+      description: row.description,
+      has_real_desc: row.has_real_desc,
+      owner: row.owner,
+      repo: row.repo,
+      path: row.path,
+      stars: row.stars,
+      license_spdx_id: row.license_spdx_id,
+      content_hash: row.content_hash,
+      raw_url: row.raw_url,
+      tags: row.tags,
+      source: row.source || "crawler",
+      repo_updated_at: row.repo_updated_at,
+    });
+    await query(
+      `UPDATE pending_skills SET status = 'approved', reviewed_at = now() WHERE id = $1`,
+      [row.id]
+    );
+    published++;
+  }
+  return { examined: rows.length, published };
+}
+
+export async function listPendingForPromote(limit = 50) {
+  const { rows } = await query(
+    `SELECT id, name, description, has_real_desc, owner, repo, path, stars,
+            license_spdx_id, content_hash, raw_url, tags, source, repo_updated_at,
+            flag_reasons
+     FROM pending_skills
+     WHERE status = 'pending'
+     ORDER BY stars DESC NULLS LAST, created_at ASC
+     LIMIT $1`,
+    [limit]
+  );
+  return rows;
+}
+
+export async function markPendingApproved(id) {
+  await query(
+    `UPDATE pending_skills SET status = 'approved', reviewed_at = now() WHERE id = $1`,
+    [id]
+  );
+}
