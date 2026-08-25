@@ -818,3 +818,18 @@ button:disabled,
   width: 100% !important;
   height: 100% !important;
 }
+
+
+.hero-threeui-warp.threeui-background,
+.hero-threeui-warp {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  background: #010828 !important;
+}
+.hero-threeui-warp canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
