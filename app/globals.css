@@ -721,3 +721,65 @@ button:disabled,
     animation: none;
   }
 }
+
+
+/* ——— Cinematic Orbis hero (video + grade) ——— */
+.hero-space-bg {
+  z-index: 0;
+  background: #010828;
+}
+.hero-cinematic-base {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 100% 70% at 50% -10%, rgba(40, 90, 200, 0.45), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 85% 70%, rgba(111, 255, 0, 0.08), transparent 50%),
+    radial-gradient(ellipse 50% 40% at 10% 80%, rgba(60, 100, 220, 0.2), transparent 45%),
+    linear-gradient(180deg, #020b2e 0%, #010828 45%, #000612 100%);
+  animation: hero-aurora 14s ease-in-out infinite alternate;
+}
+.hero-cinematic-base::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.2px 1.2px at 12% 22%, rgba(255,255,255,0.85) 50%, transparent 51%),
+    radial-gradient(1px 1px at 28% 68%, rgba(255,255,255,0.65) 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 52% 18%, rgba(111,255,0,0.7) 50%, transparent 51%),
+    radial-gradient(1px 1px at 74% 42%, rgba(255,255,255,0.75) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 88% 78%, rgba(255,255,255,0.6) 50%, transparent 51%),
+    radial-gradient(1px 1px at 18% 88%, rgba(255,255,255,0.55) 50%, transparent 51%),
+    radial-gradient(1.3px 1.3px at 62% 62%, rgba(180,210,255,0.7) 50%, transparent 51%),
+    radial-gradient(1px 1px at 40% 35%, rgba(255,255,255,0.5) 50%, transparent 51%);
+  opacity: 0.75;
+  pointer-events: none;
+}
+.hero-cinematic-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.1s ease;
+  filter: saturate(1.15) contrast(1.08) brightness(0.72);
+}
+.hero-cinematic-video.is-ready {
+  opacity: 0.85;
+}
+.hero-cinematic-grade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(1, 8, 40, 0.55) 0%, rgba(1, 8, 40, 0.25) 40%, rgba(1, 8, 40, 0.75) 100%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(111, 255, 0, 0.06), transparent 55%);
+}
+@keyframes hero-aurora {
+  from { filter: hue-rotate(0deg) brightness(1); }
+  to { filter: hue-rotate(12deg) brightness(1.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-cinematic-base { animation: none; }
+  .hero-cinematic-video { display: none; }
+}
