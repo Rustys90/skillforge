@@ -12,7 +12,7 @@
 import { searchSkillFiles, getFileContent, getRepoInfo, throttle } from "../../../../lib/github.js";
 import { parseSkillContent, hashContent, looksLikeAgentSkill } from "../../../../lib/parse-skill.js";
 import { scanContentFlags, canAutoPublish } from "../../../../lib/safety-scan.js";
-import { upsertSkill, insertPendingSkill, getCrawlCursor, setCrawlCursor } from "../../../../db/queries.js";
+import { upsertSkill, insertPendingSkill, getCrawlCursor, setCrawlCursor, listPendingForPromote, markPendingApproved } from "../../../../db/queries.js";
 
 export const maxDuration = 60;
 
@@ -37,7 +37,36 @@ export async function GET(request) {
   const mode = state.mode === "priority" ? "priority" : "sweep";
   const nextMode = mode === "priority" ? "sweep" : "priority";
 
-  const results = { mode, processed: 0, published: 0, queued: 0, rejected_not_skill: 0, errors: 0 };
+  const results = { mode, processed: 0, published: 0, queued: 0, rejected_not_skill: 0, errors: 0, promoted: 0 };
+
+  // Drain pending queue for rows that now pass auto-publish policy
+  try {
+    const pending = await listPendingForPromote(40);
+    for (const row of pending) {
+      const flagReasons = row.flag_reasons || [];
+      if (!canAutoPublish({ owner: row.owner, stars: row.stars, flagReasons })) continue;
+      await upsertSkill({
+        name: row.name,
+        description: row.description,
+        has_real_desc: row.has_real_desc,
+        owner: row.owner,
+        repo: row.repo,
+        path: row.path,
+        stars: row.stars,
+        license_spdx_id: row.license_spdx_id,
+        content_hash: row.content_hash,
+        raw_url: row.raw_url,
+        tags: row.tags,
+        source: row.source || "crawler",
+        repo_updated_at: row.repo_updated_at,
+      });
+      await markPendingApproved(row.id);
+      results.promoted++;
+      results.published++;
+    }
+  } catch (err) {
+    console.error("[crawl] promote pending failed:", err.message);
+  }
 
   try {
     const page = mode === "priority" ? state.priorityPage : state.sweepPage;
@@ -107,8 +136,8 @@ export async function GET(request) {
     }
 
     const advancedState = mode === "priority"
-      ? { ...state, priorityPage: page + 1 }
-      : { ...state, sweepPage: page + 1 };
+      ? { ...state, priorityPage: page + 1, mode: nextMode }
+      : { ...state, sweepPage: page + 1, mode: nextMode };
     await setCrawlCursor("code_search", advancedState);
     return Response.json(results);
   } catch (err) {
