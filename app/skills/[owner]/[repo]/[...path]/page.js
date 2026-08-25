@@ -5,6 +5,15 @@ import { enrichSkillWithHf } from "../../../../../lib/hf-downloads.js";
 
 export const dynamic = "force-dynamic";
 
+function safeJsonLd(obj) {
+  return JSON.stringify(obj)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
+
 const SITE_URL = process.env.SITE_URL || "https://skillforge-jet-chi.vercel.app";
 
 function skillHref(s) {
@@ -160,15 +169,15 @@ export default async function SkillPage({ params }) {
       <div className="texture-overlay" aria-hidden />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }}
         />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(howToLd) }}
+          dangerouslySetInnerHTML={{ __html: safeJsonLd(howToLd) }}
       />
 
       <div className="relative z-10 mx-auto max-w-3xl px-6 py-10 sm:px-10 sm:py-16">
