@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
 /**
- * Procedural space hero — constellation + soft nebula (ThreeUI-inspired).
- * No external video; works on mobile; respects reduced-motion.
+ * Bright constellation hero — clearly visible on mobile + desktop.
+ * CSS star fallback always paints; WebGL enhances when available.
  */
 export default function HeroSpaceBg() {
   const mountRef = useRef(null);
@@ -14,134 +14,165 @@ export default function HeroSpaceBg() {
     const mount = mountRef.current;
     if (!mount) return;
 
+    let disposed = false;
+    let raf = 0;
+    let renderer;
+    let starGeo, starMat, neonGeo, neonMat;
+    let nebulaGroup;
+
     const reduce =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const w = mount.clientWidth || window.innerWidth;
-    const h = mount.clientHeight || window.innerHeight;
+    const init = () => {
+      if (disposed) return;
+      const w = Math.max(mount.clientWidth || 0, window.innerWidth || 320);
+      const h = Math.max(mount.clientHeight || 0, window.innerHeight || 560);
+      if (w < 2 || h < 2) {
+        requestAnimationFrame(init);
+        return;
+      }
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: false,
-      alpha: true,
-      powerPreference: "high-performance",
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
-    renderer.setSize(w, h);
-    renderer.setClearColor(0x010828, 1);
-    mount.appendChild(renderer.domElement);
+      try {
+        renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: true,
+          powerPreference: "default",
+        });
+      } catch {
+        return; // keep CSS fallback only
+      }
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 100);
-    camera.position.z = 18;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(w, h, false);
+      renderer.setClearColor(0x010828, 0);
+      renderer.domElement.style.cssText =
+        "position:absolute;inset:0;width:100%;height:100%;display:block;";
+      mount.appendChild(renderer.domElement);
 
-    // Soft nebula planes
-    const nebulaGroup = new THREE.Group();
-    const nebulaColors = [0x0a1a4a, 0x12285c, 0x0d2040, 0x061030];
-    for (let i = 0; i < 4; i++) {
-      const geo = new THREE.PlaneGeometry(40, 28);
-      const mat = new THREE.MeshBasicMaterial({
-        color: nebulaColors[i],
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(60, w / h, 0.1, 100);
+      camera.position.z = 14;
+
+      // Nebula glows
+      nebulaGroup = new THREE.Group();
+      const blobs = [
+        { c: 0x0c2a6e, x: -6, y: 3, s: 22, o: 0.35 },
+        { c: 0x1a3a8a, x: 5, y: -2, s: 18, o: 0.28 },
+        { c: 0x0a1840, x: 0, y: 0, s: 28, o: 0.25 },
+        { c: 0x163060, x: 8, y: 4, s: 14, o: 0.22 },
+      ];
+      for (const b of blobs) {
+        const geo = new THREE.CircleGeometry(b.s * 0.35, 48);
+        const mat = new THREE.MeshBasicMaterial({
+          color: b.c,
+          transparent: true,
+          opacity: b.o,
+          depthWrite: false,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(b.x, b.y, -10);
+        nebulaGroup.add(mesh);
+      }
+      scene.add(nebulaGroup);
+
+      // Bright stars
+      const starCount = reduce ? 500 : 1600;
+      const positions = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 48;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 36;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 24 - 2;
+      }
+      starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      starMat = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.11,
         transparent: true,
-        opacity: 0.22 + i * 0.04,
+        opacity: 0.95,
+        depthWrite: false,
+        sizeAttenuation: true,
+      });
+      scene.add(new THREE.Points(starGeo, starMat));
+
+      // Neon green sparks
+      const neonCount = reduce ? 60 : 140;
+      const neonPos = new Float32Array(neonCount * 3);
+      for (let i = 0; i < neonCount; i++) {
+        neonPos[i * 3] = (Math.random() - 0.5) * 40;
+        neonPos[i * 3 + 1] = (Math.random() - 0.5) * 30;
+        neonPos[i * 3 + 2] = (Math.random() - 0.5) * 18;
+      }
+      neonGeo = new THREE.BufferGeometry();
+      neonGeo.setAttribute("position", new THREE.BufferAttribute(neonPos, 3));
+      neonMat = new THREE.PointsMaterial({
+        color: 0x6fff00,
+        size: 0.14,
+        transparent: true,
+        opacity: 0.75,
         depthWrite: false,
       });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set((i - 1.5) * 3, (i % 2) * 2 - 1, -8 - i * 2);
-      mesh.rotation.z = i * 0.2;
-      nebulaGroup.add(mesh);
-    }
-    scene.add(nebulaGroup);
+      const neon = new THREE.Points(neonGeo, neonMat);
+      scene.add(neon);
 
-    // Star field
-    const starCount = reduce ? 400 : 1200;
-    const positions = new Float32Array(starCount * 3);
-    const sizes = new Float32Array(starCount);
-    for (let i = 0; i < starCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 50;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 36;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 30 - 5;
-      sizes[i] = Math.random();
-    }
-    const starGeo = new THREE.BufferGeometry();
-    starGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    starGeo.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+      const stars = scene.children.find((c) => c.isPoints && c.material === starMat);
 
-    const starMat = new THREE.PointsMaterial({
-      color: 0xeff4ff,
-      size: 0.06,
-      transparent: true,
-      opacity: 0.85,
-      depthWrite: false,
-      sizeAttenuation: true,
-    });
-    const stars = new THREE.Points(starGeo, starMat);
-    scene.add(stars);
+      const onResize = () => {
+        const nw = Math.max(mount.clientWidth, window.innerWidth);
+        const nh = Math.max(mount.clientHeight, window.innerHeight);
+        camera.aspect = nw / nh;
+        camera.updateProjectionMatrix();
+        renderer.setSize(nw, nh, false);
+      };
+      window.addEventListener("resize", onResize);
 
-    // Neon accent particles (SkillForge green)
-    const neonCount = reduce ? 40 : 90;
-    const neonPos = new Float32Array(neonCount * 3);
-    for (let i = 0; i < neonCount; i++) {
-      neonPos[i * 3] = (Math.random() - 0.5) * 40;
-      neonPos[i * 3 + 1] = (Math.random() - 0.5) * 28;
-      neonPos[i * 3 + 2] = (Math.random() - 0.5) * 20;
-    }
-    const neonGeo = new THREE.BufferGeometry();
-    neonGeo.setAttribute("position", new THREE.BufferAttribute(neonPos, 3));
-    const neonMat = new THREE.PointsMaterial({
-      color: 0x6fff00,
-      size: 0.09,
-      transparent: true,
-      opacity: 0.55,
-      depthWrite: false,
-    });
-    const neon = new THREE.Points(neonGeo, neonMat);
-    scene.add(neon);
+      const clock = new THREE.Clock();
+      const animate = () => {
+        if (disposed) return;
+        raf = requestAnimationFrame(animate);
+        const t = clock.getElapsedTime();
+        if (!reduce) {
+          if (stars) {
+            stars.rotation.y = t * 0.025;
+            stars.rotation.x = Math.sin(t * 0.06) * 0.04;
+          }
+          neon.rotation.y = -t * 0.035;
+          nebulaGroup.rotation.z = Math.sin(t * 0.05) * 0.06;
+        }
+        renderer.render(scene, camera);
+      };
+      animate();
 
-    let frame = 0;
-    let raf = 0;
-    const clock = new THREE.Clock();
-
-    const onResize = () => {
-      const nw = mount.clientWidth || window.innerWidth;
-      const nh = mount.clientHeight || window.innerHeight;
-      camera.aspect = nw / nh;
-      camera.updateProjectionMatrix();
-      renderer.setSize(nw, nh);
+      // store cleanup bits on mount
+      mount.__sfCleanup = () => {
+        window.removeEventListener("resize", onResize);
+      };
     };
-    window.addEventListener("resize", onResize);
 
-    const animate = () => {
-      raf = requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
-      if (!reduce) {
-        stars.rotation.y = t * 0.02;
-        stars.rotation.x = Math.sin(t * 0.05) * 0.03;
-        neon.rotation.y = -t * 0.03;
-        nebulaGroup.rotation.z = Math.sin(t * 0.04) * 0.05;
-        nebulaGroup.children.forEach((m, i) => {
-          m.position.x += Math.sin(t * 0.1 + i) * 0.002;
-        });
-      }
-      renderer.render(scene, camera);
-      frame++;
-    };
-    animate();
+    // Wait one frame so layout has real size
+    const id = requestAnimationFrame(() => requestAnimationFrame(init));
 
     return () => {
+      disposed = true;
       cancelAnimationFrame(raf);
-      window.removeEventListener("resize", onResize);
-      starGeo.dispose();
-      starMat.dispose();
-      neonGeo.dispose();
-      neonMat.dispose();
-      nebulaGroup.traverse((obj) => {
-        if (obj.geometry) obj.geometry.dispose();
-        if (obj.material) obj.material.dispose();
-      });
-      renderer.dispose();
-      if (renderer.domElement.parentNode === mount) {
-        mount.removeChild(renderer.domElement);
+      cancelAnimationFrame(id);
+      if (mount.__sfCleanup) mount.__sfCleanup();
+      try {
+        starGeo?.dispose();
+        starMat?.dispose();
+        neonGeo?.dispose();
+        neonMat?.dispose();
+        nebulaGroup?.traverse((obj) => {
+          obj.geometry?.dispose();
+          obj.material?.dispose();
+        });
+        renderer?.dispose();
+        if (renderer?.domElement?.parentNode === mount) {
+          mount.removeChild(renderer.domElement);
+        }
+      } catch {
+        /* ignore */
       }
     };
   }, []);
@@ -149,9 +180,11 @@ export default function HeroSpaceBg() {
   return (
     <div
       ref={mountRef}
-      className="absolute inset-0 overflow-hidden"
+      className="hero-space-bg absolute inset-0 overflow-hidden"
       aria-hidden
-      style={{ background: "#010828" }}
-    />
+    >
+      {/* Always-visible CSS fallback (works even if WebGL fails) */}
+      <div className="hero-space-fallback" />
+    </div>
   );
 }
