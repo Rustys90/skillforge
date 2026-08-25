@@ -833,3 +833,58 @@ button:disabled,
   width: 100% !important;
   height: 100% !important;
 }
+
+
+/* Cherry hero video — smooth load + scroll */
+.hero-cherry-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+  /* Promote once, avoid per-frame layer thrash while scrolling */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  filter: brightness(0.78) contrast(1.05) saturate(1.05);
+}
+.hero-cherry-video.is-ready {
+  opacity: 0.88;
+}
+.hero-cherry-grade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(1, 8, 40, 0.55) 0%, rgba(1, 8, 40, 0.28) 42%, rgba(1, 8, 40, 0.8) 100%),
+    radial-gradient(ellipse 70% 45% at 50% 100%, rgba(111, 255, 0, 0.05), transparent 55%);
+}
+
+/* Page scroll smoothness */
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hero-cherry-video { display: none !important; }
+}
+
+/* Heavy sections: skip offscreen work */
+.section-contain {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 520px;
+}
+
+/* Kill expensive parallax on touch devices */
+@media (hover: none), (pointer: coarse) {
+  .parallax-card {
+    transform: none !important;
+  }
+}
+
+.motion-safe-video {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
