@@ -4,7 +4,7 @@ import { rateLimit } from "../../../../lib/rate-limit.js";
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const rl = await rateLimit(request, "search");
+  const rl = await rateLimit(request, "meta");
   if (!rl.ok) return Response.json({ error: "rate limited" }, { status: 429 });
 
   try {
