@@ -697,10 +697,9 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
 
       <section className="relative min-h-[100svh] overflow-hidden rounded-b-[24px] sm:rounded-b-[32px]" aria-label="Hero">
         <HeroSpaceBg />
-        <div className="hero-grade-tint" aria-hidden />
-        <div className="hero-grade" aria-hidden />
-        <div className="absolute inset-0 bg-gradient-to-b from-space/55 via-space/35 to-space/80 pointer-events-none" />
-        <div className="absolute inset-0 bg-space/20 pointer-events-none" />
+        <div className="hero-grade-tint pointer-events-none opacity-60" aria-hidden />
+        <div className="hero-grade pointer-events-none opacity-50" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-space/40 via-transparent to-space/70" />
         <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-content flex-col px-4 py-6 sm:px-10 sm:py-8 lg:px-16">
           <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center justify-between gap-3">
