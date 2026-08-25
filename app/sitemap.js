@@ -55,16 +55,20 @@ async function skillsFromApi() {
 
 export default async function sitemap() {
   const staticRoutes = [
+    { url: SITE_URL, lastModified: new Date(), changeFrequency: "hourly", priority: 1 },
+    { url: `${SITE_URL}/about`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
+    { url: `${SITE_URL}/faq`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/trust`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/privacy`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
     { url: `${SITE_URL}/terms`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
     { url: `${SITE_URL}/acceptable-use`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
-
-    {
-      url: SITE_URL,
+    // Category hubs (architecture: every category is a topic hub)
+    ...["pdf", "browser", "git", "sql", "docker", "deploy", "api", "security", "xlsx", "csv"].map((tag) => ({
+      url: `${SITE_URL}/categories/${tag}`,
       lastModified: new Date(),
-      changeFrequency: "hourly",
-      priority: 1,
-    },
+      changeFrequency: "daily",
+      priority: 0.65,
+    })),
   ];
 
   let skillRoutes = [];
