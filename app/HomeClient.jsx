@@ -22,9 +22,10 @@ const CTA_VIDEO =
 
 const NAV = [
   { label: "Browse", href: "#browse" },
-  { label: "Trust", href: "#trust" },
   { label: "Trending", href: "#trending" },
   { label: "Install", href: "#install" },
+  { label: "FAQ", href: "/faq" },
+  { label: "About", href: "/about" },
   { label: "GitHub", href: "https://github.com/Rustys90/skillforge", external: true },
 ];
 
@@ -377,17 +378,17 @@ function SkillDialog({ skill, open, onOpenChange, onToast, compareIds, onToggleC
   );
 }
 
-export default function HomeClient({ initialTrending = [] }) {
+export default function HomeClient({ initialTrending = [], initialWeekly = [], initialMeta = null }) {
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("");
   const [results, setResults] = useState(initialTrending);
-  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogLoading, setCatalogLoading] = useState(!(initialTrending && initialTrending.length));
   const [catalogError, setCatalogError] = useState(null);
   const [totalResults, setTotalResults] = useState(null);
   const [tab, setTab] = useState("weekly");
-  const [trending, setTrending] = useState([]);
+  const [trending, setTrending] = useState(initialWeekly.length ? initialWeekly : []);
   const [trendingLoading, setTrendingLoading] = useState(true);
-  const [meta, setMeta] = useState(null);
+  const [meta, setMeta] = useState(initialMeta);
   const [toast, setToast] = useState(null);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [cliOpen, setCliOpen] = useState(false);
@@ -985,11 +986,12 @@ export default function HomeClient({ initialTrending = [] }) {
         <video
           className="motion-safe-video absolute inset-0 h-full w-full object-cover"
           src={ABOUT_VIDEO}
-          autoPlay
           loop
           muted
           playsInline
+          preload="metadata"
           preload="none"
+          poster=""
           aria-hidden
         />
         <div className="motion-reduce-fallback absolute inset-0 bg-gradient-to-r from-space via-[#02103a] to-space" aria-hidden />
@@ -1008,6 +1010,39 @@ export default function HomeClient({ initialTrending = [] }) {
             </div>
             <p className="font-body max-w-[300px] text-[15px] leading-relaxed text-cream/85 sm:text-[16px]">
               A living index of agent skills from public GitHub — scanned, ranked, installable in one line.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* GEO/AEO citable prose — server-friendly facts */}
+      <section id="what-is" className="border-b border-white/5 bg-space py-14 sm:py-16" aria-labelledby="what-is-heading">
+        <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
+          <h2 id="what-is-heading" className="font-display-alt text-[24px] font-semibold uppercase tracking-wide text-cream sm:text-[32px]">
+            What SkillForge indexes
+          </h2>
+          <div className="font-body mt-4 max-w-3xl space-y-3 text-[15px] leading-relaxed text-cream/70">
+            <p>
+              SkillForge is a living index of <strong className="text-cream">AI agent skills</strong> published
+              as public <code className="rounded bg-white/10 px-1 font-mono text-[12px] text-neon">SKILL.md</code>{" "}
+              files on GitHub. As of the latest crawl, the registry holds{" "}
+              <strong className="text-cream">{(meta?.totalSkills ?? "thousands of").toLocaleString?.() ?? meta?.totalSkills ?? "thousands of"}</strong>{" "}
+              skills. Each entry is safety-scanned for high-risk patterns before auto-publish.
+            </p>
+            <p>
+              Developers install skills with one command:{" "}
+              <code className="rounded bg-white/10 px-1 font-mono text-[12px] text-neon">npx skillforge add owner/repo/skill</code>.
+              Rankings use real CLI installs when volume is meaningful; otherwise time-aware estimates from
+              repository stars are shown and clearly labeled.
+            </p>
+            <p>
+              Explore by{" "}
+              <a href="/categories/pdf" className="text-neon hover:underline">PDF</a>,{" "}
+              <a href="/categories/browser" className="text-neon hover:underline">browser</a>,{" "}
+              <a href="/categories/git" className="text-neon hover:underline">git</a>, or{" "}
+              <a href="/categories/sql" className="text-neon hover:underline">SQL</a> categories — or read the{" "}
+              <a href="/faq" className="text-neon hover:underline">FAQ</a> and{" "}
+              <a href="/trust" className="text-neon hover:underline">trust methodology</a>.
             </p>
           </div>
         </div>
@@ -1200,9 +1235,7 @@ export default function HomeClient({ initialTrending = [] }) {
                 key={c.id}
                 type="button"
                 onClick={() => {
-                  setActiveTag(c.tag);
-                  setQuery("");
-                  document.getElementById("browse")?.scrollIntoView({ behavior: "smooth" });
+                  window.location.href = `/categories/${encodeURIComponent(c.tag)}`;
                 }}
                 className="parallax-card panel flex gap-3 p-4 text-left transition hover:bg-white/[0.05]"
               >
@@ -1291,7 +1324,13 @@ export default function HomeClient({ initialTrending = [] }) {
                   <div>
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-grotesk text-xl uppercase tracking-wide text-cream">
-                        {s.name}
+                        <Link
+                          href={`/skills/${s.owner}/${s.repo}/${skillPath(s)}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="hover:text-neon"
+                        >
+                          {s.name}
+                        </Link>
                       </h3>
                       <span className="shrink-0 rounded-full border border-neon/25 bg-neon/10 px-2 py-0.5 font-ui text-[9px] font-semibold uppercase tracking-wide text-neon">
                         Scanned
@@ -1648,7 +1687,7 @@ export default function HomeClient({ initialTrending = [] }) {
             Logos loop from orgs that publish public agent skills on GitHub — not paid placement.
           </p>
         </div>
-        <div className="logo-marquee mt-8" aria-hidden="true">
+        <div className="logo-marquee mt-8" role="region" aria-label="Indexed publishers">
           <div className="logo-marquee-track">
             {[...PUBLISHERS, ...PUBLISHERS].map((pub, i) => (
               <a
@@ -1663,7 +1702,7 @@ export default function HomeClient({ initialTrending = [] }) {
                 {pub.slug ? (
                   <img
                     src={`https://cdn.simpleicons.org/${pub.slug}`}
-                    alt=""
+                    alt={`${pub.name} logo`}
                     width={132}
                     height={36}
                     loading="lazy"
@@ -1691,7 +1730,7 @@ export default function HomeClient({ initialTrending = [] }) {
                 {pub.slug ? (
                   <img
                     src={`https://cdn.simpleicons.org/${pub.slug}`}
-                    alt=""
+                    alt={`${pub.name} logo`}
                     width={132}
                     height={36}
                     loading="lazy"
@@ -1749,6 +1788,15 @@ export default function HomeClient({ initialTrending = [] }) {
                 <a href="/acceptable-use" className="transition hover:text-neon focus-visible:text-neon">
                   Acceptable use
                 </a>
+              </li>
+              <li>
+                <a href="/about" className="transition hover:text-neon focus-visible:text-neon">About</a>
+              </li>
+              <li>
+                <a href="/faq" className="transition hover:text-neon focus-visible:text-neon">FAQ</a>
+              </li>
+              <li>
+                <a href="/trust" className="transition hover:text-neon focus-visible:text-neon">Trust</a>
               </li>
               <li>
                 <a href="https://github.com/Rustys90/skillforge/issues" target="_blank" rel="noopener noreferrer" className="transition hover:text-neon focus-visible:text-neon">
