@@ -22,6 +22,9 @@ export async function POST(request) {
   if (/[<>\0]/.test(owner + repo) || path.includes("..")) {
     return Response.json({ error: "invalid input" }, { status: 400 });
   }
+  if (!/^[A-Za-z0-9_.-]+$/.test(owner) || !/^[A-Za-z0-9_.-]+$/.test(repo)) {
+    return Response.json({ error: "invalid input" }, { status: 400 });
+  }
 
   try {
     const ok = await reportSkill(owner, repo, path);
