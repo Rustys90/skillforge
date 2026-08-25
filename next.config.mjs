@@ -2,9 +2,13 @@
 const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  // Prefer modern image defaults; none required for this app's video-first UI
+  transpilePackages: ["@designcodeio/threeui"],
   images: {
-    remotePatterns: [],
+    remotePatterns: [
+      { protocol: "https", hostname: "github.com" },
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
+      { protocol: "https", hostname: "cdn.simpleicons.org" },
+    ],
   },
 };
 
