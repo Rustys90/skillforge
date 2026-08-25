@@ -567,6 +567,29 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
     setDialogOpen(true);
   };
 
+  // Pause background videos when offscreen — keeps scroll smooth
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const vids = Array.from(document.querySelectorAll("video.motion-safe-video, video.hero-cherry-video"));
+    if (!vids.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const v = e.target;
+          if (!(v instanceof HTMLVideoElement)) continue;
+          if (e.isIntersecting && e.intersectionRatio > 0.1) {
+            v.play().catch(() => {});
+          } else {
+            v.pause();
+          }
+        }
+      },
+      { threshold: [0, 0.1, 0.25], rootMargin: "60px 0px" }
+    );
+    vids.forEach((v) => io.observe(v));
+    return () => io.disconnect();
+  }, [results.length, trending.length]);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem("sf_recent_q");
@@ -974,6 +997,10 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
         <video
           className="motion-safe-video absolute inset-0 h-full w-full object-cover"
           src={ABOUT_VIDEO}
+          preload="none"
+          muted
+          loop
+          playsInline
           loop
           muted
           playsInline
@@ -1006,7 +1033,7 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
       {/* GEO/AEO citable prose — server-friendly facts */}
       
 
-      <section id="browse" className="bg-space py-20 sm:py-24 lg:py-28">
+      <section id="browse" className="section-contain bg-space py-20 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
           <div className="mb-12 flex flex-col gap-8 lg:mb-16 lg:flex-row lg:items-end lg:justify-between">
             <h2 className="font-grotesk text-[32px] uppercase leading-[1.05] text-cream sm:text-[44px] md:text-[52px]">
@@ -1405,7 +1432,7 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
         </div>
       </section>
 
-      <section id="trending" className="border-t border-white/5 bg-space py-20">
+      <section id="trending" className="section-contain border-t border-white/5 bg-space py-20">
         <div className="mx-auto max-w-3xl px-6 sm:px-10">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -1570,7 +1597,7 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
         </div>
       </section>
 
-      <section id="install" className="relative w-full overflow-hidden bg-space">
+      <section id="install" className="section-contain relative w-full overflow-hidden bg-space">
         <video className="motion-safe-video block h-auto w-full brightness-75 contrast-110 saturate-50" src={CTA_VIDEO} autoPlay loop muted playsInline preload="none" aria-hidden />
         <div className="pointer-events-none absolute inset-0 bg-space/40" aria-hidden />
         <div className="motion-reduce-fallback min-h-[40vh] w-full bg-gradient-to-r from-space via-[#02103a] to-space" aria-hidden />
