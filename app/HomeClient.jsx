@@ -622,7 +622,7 @@ export default function HomeClient({ initialTrending = [] }) {
       {/* Slim stats + install ticker */}
       <div className="relative z-[60] border-b border-white/5 bg-space/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-content items-center gap-4 px-4 py-1.5 sm:px-10">
-          <div className="flex shrink-0 items-center gap-2 font-mono text-[10px] uppercase tracking-wide text-cream/55">
+          <div className="flex shrink-0 items-center gap-2 font-ui text-[11px] font-medium uppercase tracking-wide text-cream/60">
             <span className="text-neon/90">
               <span className="tabular-nums transition-opacity duration-300">
                 {meta?.totalSkills != null ? Number(meta.totalSkills).toLocaleString() : "—"}
@@ -716,7 +716,7 @@ export default function HomeClient({ initialTrending = [] }) {
                 <a
                   key={`m-${item.label}`}
                   href={item.href}
-                  className="tag-chip rounded-full border border-white/10 px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-cream/70"
+                  className="tag-chip rounded-full border border-white/10 px-3 py-1 font-ui text-[10px] font-medium uppercase tracking-wide text-cream/70"
                 >
                   {item.label}
                 </a>
@@ -731,14 +731,14 @@ export default function HomeClient({ initialTrending = [] }) {
                         href={item.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-grotesk text-[13px] uppercase tracking-wide text-cream transition hover:text-neon"
+                        className="font-ui text-[13px] font-semibold uppercase tracking-wide text-cream transition hover:text-neon"
                       >
                         {item.label}
                       </a>
                     ) : (
                       <a
                         href={item.href}
-                        className="font-grotesk text-[13px] uppercase tracking-wide text-cream transition hover:text-neon"
+                        className="font-ui text-[13px] font-semibold uppercase tracking-wide text-cream transition hover:text-neon"
                       >
                         {item.label}
                       </a>
@@ -912,7 +912,7 @@ export default function HomeClient({ initialTrending = [] }) {
                     setActiveTag((cur) => (cur === tag ? "" : tag));
                   }}
                   className={cn(
-                    "tag-chip pressable rounded-full px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/50",
+                    "tag-chip pressable rounded-full px-3.5 py-1.5 font-ui text-[11px] font-medium uppercase tracking-wide transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/50",
                     activeTag === tag
                       ? "bg-neon text-space"
                       : "border border-white/10 bg-white/[0.04] text-cream hover:bg-white/10"
@@ -942,7 +942,7 @@ export default function HomeClient({ initialTrending = [] }) {
             ].map(({ icon: Icon, label }) => (
               <span
                 key={label}
-                className="liquid-glass inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-cream/70"
+                className="liquid-glass inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-ui text-[10px] font-medium uppercase tracking-wide text-cream/70"
               >
                 <Icon className="h-3 w-3 text-neon" /> {label}
               </span>
@@ -1186,7 +1186,7 @@ export default function HomeClient({ initialTrending = [] }) {
               >
                 <span className="collection-accent" aria-hidden />
                 <span>
-                  <p className="font-grotesk text-sm uppercase tracking-wide text-cream">{c.title}</p>
+                  <p className="font-display-alt text-sm font-semibold uppercase tracking-wide text-cream">{c.title}</p>
                   <p className="font-body mt-1 text-[13px] leading-snug text-cream/55">{c.blurb}</p>
                   {tagCountMap[c.tag] != null && (
                     <p className="mt-2 font-mono text-[10px] uppercase text-neon/80">{tagCountMap[c.tag]} skills</p>
@@ -1199,7 +1199,7 @@ export default function HomeClient({ initialTrending = [] }) {
           {/* New this week rail */}
           {(meta?.newest?.length > 0) && (
             <div className="mb-10">
-              <h3 className="mb-3 font-grotesk text-lg uppercase text-cream">New in the index</h3>
+              <h3 className="mb-3 font-display-alt text-lg font-semibold uppercase tracking-wide text-cream">New in the index</h3>
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {meta.newest.map((s) => (
                   <button
@@ -1271,7 +1271,7 @@ export default function HomeClient({ initialTrending = [] }) {
                       <h3 className="font-grotesk text-xl uppercase tracking-wide text-cream">
                         {s.name}
                       </h3>
-                      <span className="shrink-0 rounded-full border border-neon/25 bg-neon/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-neon">
+                      <span className="shrink-0 rounded-full border border-neon/25 bg-neon/10 px-2 py-0.5 font-ui text-[9px] font-semibold uppercase tracking-wide text-neon">
                         Scanned
                       </span>
                     </div>
@@ -1389,7 +1389,7 @@ export default function HomeClient({ initialTrending = [] }) {
         <div className="mx-auto max-w-3xl px-6 sm:px-10">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-neon">Leaderboard</p>
+              <p className="font-ui text-[10px] font-semibold uppercase tracking-[0.25em] text-neon">Leaderboard</p>
               <h2 className="mt-2 font-grotesk text-3xl uppercase tracking-wide text-cream sm:text-4xl">
                 Trending skills
               </h2>
@@ -1535,7 +1535,7 @@ export default function HomeClient({ initialTrending = [] }) {
 
       <section id="changelog" className="reveal border-b border-white/5 py-10" aria-labelledby="changelog-heading">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
-          <h2 id="changelog-heading" className="font-grotesk text-xl uppercase text-cream">Index updates</h2>
+          <h2 id="changelog-heading" className="font-display-alt text-xl font-semibold uppercase tracking-wide text-cream">Index updates</h2>
           <p className="mt-2 font-mono text-[11px] uppercase text-cream/50">
             Crawler runs continuously. Latest cursor snapshot from the registry.
           </p>
@@ -1598,7 +1598,7 @@ export default function HomeClient({ initialTrending = [] }) {
                   onClick={() => setOpenFaq((cur) => (cur === idx ? -1 : idx))}
                   aria-expanded={openFaq === idx}
                 >
-                  <span className="font-grotesk text-sm uppercase tracking-wide text-cream">{item.q}</span>
+                  <span className="font-ui text-sm font-semibold uppercase tracking-wide text-cream">{item.q}</span>
                   <ChevronRight className={cn("h-4 w-4 text-neon transition", openFaq === idx && "rotate-90")} />
                 </button>
                 <div className={cn("faq-answer", openFaq === idx && "is-open")}>
@@ -1697,7 +1697,7 @@ export default function HomeClient({ initialTrending = [] }) {
             </p>
           </div>
           <nav aria-label="Footer">
-            <ul className="flex flex-wrap gap-4 font-mono text-[11px] uppercase tracking-wide text-cream/55">
+            <ul className="flex flex-wrap gap-4 font-ui text-[11px] font-medium uppercase tracking-wide text-cream/55">
               <li>
                 <a href="#browse" className="transition hover:text-neon focus-visible:text-neon">
                   Catalog
