@@ -7,10 +7,11 @@ export async function GET(request) {
   if (!rl.ok) return Response.json({ error: "rate limited" }, { status: 429 });
 
   const { searchParams } = new URL(request.url);
-  const q = searchParams.get("q") || "";
-  const tag = searchParams.get("tag") || undefined;
-  const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 50);
-  const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10), 0);
+  const q = String(searchParams.get("q") || "").slice(0, 120);
+  const tagRaw = searchParams.get("tag");
+  const tag = tagRaw ? String(tagRaw).slice(0, 40) : undefined;
+  const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "20", 10) || 20, 1), 50);
+  const offset = Math.min(Math.max(parseInt(searchParams.get("offset") || "0", 10) || 0, 0), 5000);
 
   try {
     const { results, total } = await searchSkills({ q, tag, limit, offset });
