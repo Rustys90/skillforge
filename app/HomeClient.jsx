@@ -381,7 +381,7 @@ export default function HomeClient({ initialTrending = [] }) {
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("");
   const [results, setResults] = useState(initialTrending);
-  const [catalogLoading, setCatalogLoading] = useState(() => !(initialTrending && initialTrending.length));
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState(null);
   const [totalResults, setTotalResults] = useState(null);
   const [tab, setTab] = useState("weekly");
@@ -519,24 +519,46 @@ export default function HomeClient({ initialTrending = [] }) {
       .finally(() => setTrendingLoadingMore(false));
   };
 
-  /* Scroll-reveal: mark .reveal nodes when they enter the viewport */
+  /* Scroll-reveal for cards — fail-safe so content never stays invisible */
   useEffect(() => {
-    const nodes = document.querySelectorAll(".reveal");
+    const nodes = Array.from(document.querySelectorAll(".reveal:not(.is-visible)"));
     if (!nodes.length) return;
+
+    // Immediate: anything already on screen
+    const mark = (el) => el.classList.add("is-visible");
+    const inView = (el) => {
+      const r = el.getBoundingClientRect();
+      return r.top < window.innerHeight * 1.05 && r.bottom > -40;
+    };
+    nodes.forEach((n) => {
+      if (inView(n)) mark(n);
+    });
+
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
           if (e.isIntersecting) {
-            e.target.classList.add("is-visible");
+            mark(e.target);
             io.unobserve(e.target);
           }
         });
       },
-      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+      { threshold: 0.01, rootMargin: "80px 0px 80px 0px" }
     );
-    nodes.forEach((n) => io.observe(n));
-    return () => io.disconnect();
-  }, [results, trending, trendingLoading]);
+    nodes.forEach((n) => {
+      if (!n.classList.contains("is-visible")) io.observe(n);
+    });
+
+    // Failsafe: if still hidden after 600ms (slow IO / mobile quirks), show all
+    const failsafe = window.setTimeout(() => {
+      document.querySelectorAll(".reveal:not(.is-visible)").forEach(mark);
+    }, 600);
+
+    return () => {
+      io.disconnect();
+      window.clearTimeout(failsafe);
+    };
+  }, [results, trending, trendingLoading, catalogLoading, meta]);
 
   const openSkill = (s) => {
     setSelected(s);
@@ -959,7 +981,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </div>
 
-<section className="relative min-h-[50vh] overflow-hidden">
+<section className="relative min-h-[36vh] overflow-hidden sm:min-h-[50vh]">
         <video
           className="motion-safe-video absolute inset-0 h-full w-full object-cover"
           src={ABOUT_VIDEO}
@@ -972,7 +994,7 @@ export default function HomeClient({ initialTrending = [] }) {
         />
         <div className="motion-reduce-fallback absolute inset-0 bg-gradient-to-r from-space via-[#02103a] to-space" aria-hidden />
         <div className="absolute inset-0 bg-gradient-to-r from-space/80 via-space/55 to-space/70" />
-        <div className="relative z-10 mx-auto flex min-h-[50vh] max-w-content flex-col justify-center px-6 py-16 sm:px-10 lg:px-16">
+        <div className="relative z-10 mx-auto flex min-h-[36vh] max-w-content flex-col justify-center px-6 py-12 sm:min-h-[50vh] sm:px-10 sm:py-16 lg:px-16">
           <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
             <div className="relative">
               <h2 className="font-grotesk text-[32px] uppercase leading-[1.05] text-cream sm:text-[44px] md:text-[52px]">
@@ -991,7 +1013,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <section id="browse" className="reveal bg-space py-20 sm:py-24 lg:py-28">
+      <section id="browse" className="bg-space py-20 sm:py-24 lg:py-28">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
           <div className="mb-12 flex flex-col gap-8 lg:mb-16 lg:flex-row lg:items-end lg:justify-between">
             <h2 className="font-grotesk text-[32px] uppercase leading-[1.05] text-cream sm:text-[44px] md:text-[52px]">
@@ -1385,7 +1407,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <section id="trending" className="reveal border-t border-white/5 bg-space py-20">
+      <section id="trending" className="border-t border-white/5 bg-space py-20">
         <div className="mx-auto max-w-3xl px-6 sm:px-10">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -1506,7 +1528,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <section id="trust" className="reveal border-y border-white/5 bg-space py-16 sm:py-20" aria-labelledby="trust-heading">
+      <section id="trust" className="border-y border-white/5 bg-space py-16 sm:py-20" aria-labelledby="trust-heading">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
           <p className="font-condiment text-2xl text-neon sm:text-3xl">Trust</p>
           <h2 id="trust-heading" className="font-grotesk text-[28px] uppercase leading-tight text-cream sm:text-[40px]">
@@ -1533,7 +1555,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <section id="changelog" className="reveal border-b border-white/5 py-10" aria-labelledby="changelog-heading">
+      <section id="changelog" className="border-b border-white/5 py-10" aria-labelledby="changelog-heading">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
           <h2 id="changelog-heading" className="font-display-alt text-xl font-semibold uppercase tracking-wide text-cream">Index updates</h2>
           <p className="mt-2 font-mono text-[11px] uppercase text-cream/50">
@@ -1550,7 +1572,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <section id="install" className="reveal relative w-full overflow-hidden bg-space">
+      <section id="install" className="relative w-full overflow-hidden bg-space">
         <video className="motion-safe-video block h-auto w-full brightness-75 contrast-110 saturate-50" src={CTA_VIDEO} autoPlay loop muted playsInline preload="none" aria-hidden />
         <div className="pointer-events-none absolute inset-0 bg-space/40" aria-hidden />
         <div className="motion-reduce-fallback min-h-[40vh] w-full bg-gradient-to-r from-space via-[#02103a] to-space" aria-hidden />
@@ -1580,7 +1602,7 @@ export default function HomeClient({ initialTrending = [] }) {
       </section>
 
 
-      <section id="faq" className="reveal border-t border-white/5 py-20" aria-labelledby="faq-heading">
+      <section id="faq" className="border-t border-white/5 py-20" aria-labelledby="faq-heading">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
           <p className="font-condiment text-2xl text-neon sm:text-3xl">Questions</p>
           <h2 id="faq-heading" className="font-grotesk text-[28px] uppercase leading-tight text-cream sm:text-[40px]">
@@ -1617,7 +1639,7 @@ export default function HomeClient({ initialTrending = [] }) {
         </div>
       </section>
 
-      <section id="sources" className="reveal border-t border-white/5 py-14 sm:py-16" aria-label="Indexed sources">
+      <section id="sources" className="border-t border-white/5 py-14 sm:py-16" aria-label="Indexed sources">
         <div className="mx-auto max-w-content px-6 sm:px-10 lg:px-16">
           <p className="font-mono text-[10px] uppercase tracking-wide text-cream/40">
             Trusted publishers in the index
