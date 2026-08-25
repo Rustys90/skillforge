@@ -531,6 +531,15 @@ export async function getRegistryMeta() {
     crawlNote = null;
   }
 
+  let tagCounts = [];
+  try {
+    tagCounts = await getTagCounts(40);
+  } catch {
+    tagCounts = [];
+  }
+
+  const featuredPool = applyDownloadEstimates(featuredRows.slice(0, 8));
+
   return {
     totalSkills,
     installsTotal,
@@ -538,6 +547,23 @@ export async function getRegistryMeta() {
     recentInstalls,
     newest: applyDownloadEstimates(newest),
     featured: featured ? applyDownloadEstimates([featured])[0] : null,
+    featuredPool,
+    tagCounts,
     crawlNote,
   };
+}
+
+
+/** Tag frequency for chip counts and collections. */
+export async function getTagCounts(limit = 40) {
+  const { rows } = await query(
+    `SELECT lower(tag) AS tag, COUNT(*)::int AS count
+     FROM skills s, unnest(COALESCE(s.tags, ARRAY[]::text[])) AS tag
+     WHERE s.duplicate_of IS NULL
+     GROUP BY 1
+     ORDER BY count DESC
+     LIMIT $1`,
+    [limit]
+  );
+  return rows;
 }
