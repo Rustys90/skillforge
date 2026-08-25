@@ -29,7 +29,7 @@ export function middleware(request) {
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https://*.cloudfront.net https:",
-    "connect-src 'self' https://huggingface.co https://*.supabase.co wss://*.supabase.co https:",
+    "connect-src 'self' https://cdn.simpleicons.org",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
