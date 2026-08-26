@@ -24,7 +24,6 @@ function authorizedCron(request) {
   const header = request.headers.get("x-cron-secret") || "";
   const auth = request.headers.get("authorization") || "";
   const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
-  // timing-safe-ish length check + equality
   return header === expected || bearer === expected;
 }
 
@@ -37,7 +36,7 @@ export async function GET(request) {
   const mode = state.mode === "priority" ? "priority" : "sweep";
   const nextMode = mode === "priority" ? "sweep" : "priority";
 
-  const results = { mode, processed: 0, published: 0, queued: 0, rejected_not_skill: 0, errors: 0, promoted: 0 };
+  const results = { mode, processed: 0, published: 0, queued: 0, rejected_not_skill: 0, errors: 0, promoted: 0, backfilled: 0 };
 
   // Drain pending queue for rows that now pass auto-publish policy
   try {
@@ -59,6 +58,8 @@ export async function GET(request) {
         tags: row.tags,
         source: row.source || "crawler",
         repo_updated_at: row.repo_updated_at,
+        // Critical for SEO: skill pages need full SKILL.md body
+        raw_content: row.raw_content || null,
       });
       await markPendingApproved(row.id);
       results.promoted++;
@@ -120,13 +121,15 @@ export async function GET(request) {
           tags: parsed.tags,
           source: "crawler",
           repo_updated_at: repoInfo.updatedAt,
+          // Always store full body so skill pages are not thin (~58 words)
+          raw_content: content,
         };
 
         if (canAutoPublish({ owner, stars: repoInfo.stars, flagReasons })) {
           await upsertSkill(skillRecord);
           results.published++;
         } else {
-          await insertPendingSkill({ ...skillRecord, raw_content: content, flag_reasons: flagReasons });
+          await insertPendingSkill({ ...skillRecord, flag_reasons: flagReasons });
           results.queued++;
         }
       } catch (err) {
