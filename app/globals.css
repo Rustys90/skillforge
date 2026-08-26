@@ -888,3 +888,17 @@ html {
   transform: translateZ(0);
   backface-visibility: hidden;
 }
+/* Sylva Living World hero host */
+.hero-sylva-scene.threeui-background,
+.hero-sylva-scene {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  background: #4a4d44 !important;
+}
+.hero-sylva-scene iframe {
+  width: 100% !important;
+  height: 100% !important;
+}
