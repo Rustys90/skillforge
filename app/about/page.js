@@ -5,91 +5,73 @@ const SITE_URL = process.env.SITE_URL || "https://skillforge-jet-chi.vercel.app"
 export const metadata = {
   title: "About SkillForge — the agent skill registry",
   description:
-    "SkillForge indexes public AI agent skills (SKILL.md) from GitHub, safety-scans them, ranks by activity, and installs with one npx command.",
+    "SkillForge indexes public SKILL.md agent skills from GitHub, safety-scans them, and offers one-command install via npx skillforge add. Learn how the catalog and crawler work.",
   alternates: { canonical: `${SITE_URL}/about` },
+  openGraph: {
+    title: "About SkillForge",
+    description: "Public registry of AI agent skills indexed from GitHub with safety scanning and CLI install.",
+    url: `${SITE_URL}/about`,
+  },
 };
 
 export default function AboutPage() {
-  const aboutLd = {
-    "@context": "https://schema.org",
-    "@type": "AboutPage",
-    name: "About SkillForge",
-    url: `${SITE_URL}/about`,
-    mainEntity: {
-      "@type": "Organization",
-      name: "SkillForge",
-      url: SITE_URL,
-      description:
-        "Public registry of AI agent skills indexed from GitHub with safety scanning and CLI install.",
-    },
-  };
-
   return (
     <main className="min-h-screen bg-space px-6 py-16 text-cream">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(aboutLd).replace(/</g, "\\u003c"),
-        }}
-      />
       <article className="mx-auto max-w-2xl">
         <p className="font-mono text-[10px] uppercase tracking-wide text-neon">
           <Link href="/" className="hover:underline">
             Home
-          </Link>{" "}
-          / About
+          </Link>{" "}/ About
         </p>
-        <h1 className="mt-3 font-grotesk text-[32px] uppercase leading-tight sm:text-[44px]">
-          About SkillForge
-        </h1>
+        <h1 className="mt-3 font-grotesk text-[32px] uppercase leading-tight sm:text-[44px]">About SkillForge</h1>
         <div className="font-body mt-6 space-y-4 text-[15px] leading-relaxed text-cream/75">
           <p>
-            <strong className="text-cream">SkillForge</strong> is a public registry of AI agent skills. A skill is
-            typically a <code className="rounded bg-white/10 px-1 font-mono text-[13px] text-neon">SKILL.md</code>{" "}
-            file (and optional helpers) that teaches an agent how to perform a task—working with PDFs, driving a
-            browser, shipping with git, querying SQL, and similar workflows.
+            SkillForge is a public registry for <strong className="text-cream">AI agent skills</strong>—SKILL.md
+            packages that teach coding agents (Claude Code, Cursor, and similar tools) how to perform concrete tasks.
+            Instead of hunting across scattered GitHub repos, you search one catalog, open a skill page, and install
+            with a single CLI command.
           </p>
+          <h2 className="font-grotesk pt-2 text-base uppercase text-cream">What we index</h2>
           <p>
-            Skills are discovered by crawling public GitHub repositories. Before a skill is auto-published,
-            SkillForge runs a pattern-based safety scan for high-risk behaviors such as destructive shell
-            commands, sensitive file access, and unsafe install pipelines. Block-severity findings are held for
-            review rather than published silently.
+            Our crawler searches public GitHub for <code className="text-neon">SKILL.md</code> files, parses
+            frontmatter and body content, runs a safety pattern scan, and publishes skills that pass auto-publish
+            policy. High-risk findings go to a review queue. Canonical skill URLs never include a trailing{" "}
+            <code className="text-neon">SKILL.md</code> segment.
           </p>
+          <h2 className="font-grotesk pt-2 text-base uppercase text-cream">How install works</h2>
           <p>
-            The catalog supports search, tag filters, and leaderboards (daily, weekly, hot, overall). Install
-            activity from the CLI is recorded when available; otherwise rankings may use time-aware estimates
-            derived from repository stars, and those estimates are labeled in the interface.
+            On any skill page, copy the install command and run it locally, for example{" "}
+            <code className="text-neon">npx skillforge add owner/repo/skill</code>. The CLI fetches the skill from
+            the upstream repository; SkillForge does not host arbitrary binaries.
           </p>
+          <h2 className="font-grotesk pt-2 text-base uppercase text-cream">Rankings & metrics</h2>
           <p>
-            Installation is intentionally simple:{" "}
-            <code className="rounded bg-white/10 px-1 font-mono text-[13px] text-neon">
-              npx skillforge add owner/repo/skill
-            </code>
-            . Upstream licenses and source remain on GitHub; SkillForge does not re-license third-party skills.
+            Browse by overall popularity, daily, weekly, or hot windows. When CLI install volume is meaningful,
+            metrics are labeled live; otherwise figures are estimated from repository stars and clearly marked so
+            rankings stay honest.
           </p>
+          <h2 className="font-grotesk pt-2 text-base uppercase text-cream">Open source</h2>
           <p>
-            Open source:{" "}
-            <a
-              className="text-neon hover:underline"
-              href="https://github.com/Rustys90/skillforge"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              github.com/Rustys90/skillforge
+            The SkillForge application is open source under MIT. Contributions and issue reports are welcome on{" "}
+            <a className="text-neon hover:underline" href="https://github.com/Rustys90/skillforge">
+              GitHub
             </a>
             .
           </p>
-        </div>
-        <div className="mt-10 flex flex-wrap gap-3">
-          <Link href="/#browse" className="rounded-full bg-neon px-4 py-2 font-grotesk text-[11px] uppercase text-space">
-            Browse catalog
-          </Link>
-          <Link href="/faq" className="rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase text-cream">
-            FAQ
-          </Link>
-          <Link href="/trust" className="rounded-full border border-white/15 px-4 py-2 font-mono text-[11px] uppercase text-cream">
-            Trust
-          </Link>
+          <div className="flex flex-wrap gap-3 pt-4 font-mono text-[11px]">
+            <Link href="/trust" className="text-neon hover:underline">
+              Trust & safety
+            </Link>
+            <Link href="/faq" className="text-neon hover:underline">
+              FAQ
+            </Link>
+            <Link href="/categories/pdf" className="text-neon hover:underline">
+              PDF skills
+            </Link>
+            <Link href="/llms.txt" className="text-neon hover:underline">
+              llms.txt
+            </Link>
+          </div>
         </div>
       </article>
     </main>
