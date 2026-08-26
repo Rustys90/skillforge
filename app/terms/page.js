@@ -3,9 +3,9 @@ import { LegalPage, H, P, Ul } from "../../components/LegalPage.jsx";
 const SITE_URL = process.env.SITE_URL || "https://skillforge-jet-chi.vercel.app";
 
 export const metadata = {
-  title: "Terms of Use",
+  title: "Terms of Use — SkillForge",
   description:
-    "Terms governing use of SkillForge, the public agent skill registry.",
+    "SkillForge terms of use for the public agent skill registry: catalog and CLI use, third-party GitHub skills, disclaimers, and liability limits. Not legal advice.",
   alternates: { canonical: `${SITE_URL}/terms` },
   robots: { index: true, follow: true },
 };
