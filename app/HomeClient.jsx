@@ -4,7 +4,14 @@ import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Search, Star, Terminal, ExternalLink, ChevronRight, Copy, Share2, Shield, Github, Command, X, GitCompare, HelpCircle, Clock, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
-import HeroSpaceBg from "@/components/HeroSpaceBg";
+import dynamic from "next/dynamic";
+
+const HeroSpaceBg = dynamic(() => import("@/components/HeroSpaceBg"), {
+  ssr: false,
+  loading: () => (
+    <div className="hero-space-bg absolute inset-0" style={{ background: "#010828" }} aria-hidden />
+  ),
+});
 import {
   Dialog,
   DialogContent,
@@ -563,8 +570,9 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
   }, [results, trending, trendingLoading, catalogLoading, meta]);
 
   const openSkill = (s) => {
-    setSelected(s);
-    setDialogOpen(true);
+    if (!s) return;
+    // Full skill page only — no intermediate partial dialog
+    window.location.assign(skillHref(s));
   };
 
   // Pause background videos when offscreen — keeps scroll smooth
