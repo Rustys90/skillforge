@@ -12,13 +12,6 @@ const HeroSpaceBg = dynamic(() => import("@/components/HeroSpaceBg"), {
     <div className="hero-space-bg absolute inset-0" style={{ background: "#010828" }} aria-hidden />
   ),
 });
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 
 /* Cinematic space / abstract — no cartoon characters */
 const HERO_VIDEO =
@@ -205,187 +198,6 @@ function descText(s) {
   return d;
 }
 
-function SkillDialog({ skill, open, onOpenChange, onToast, compareIds, onToggleCompare }) {
-  const [full, setFull] = useState(null);
-  const [related, setRelated] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!open || !skill) {
-      setFull(null);
-      setRelated([]);
-      return;
-    }
-    const path = skillPath(skill) || skill.path || skill.name;
-    setLoading(true);
-    fetch(
-      `/api/skills/detail?owner=${encodeURIComponent(skill.owner)}&repo=${encodeURIComponent(skill.repo)}&path=${encodeURIComponent(path)}`
-    )
-      .then((r) => r.json())
-      .then((d) => {
-        setFull(d.skill || skill);
-        setRelated(d.related || []);
-      })
-      .catch(() => {
-        setFull(skill);
-        setRelated([]);
-      })
-      .finally(() => setLoading(false));
-  }, [open, skill]);
-
-  if (!skill) return null;
-  const s = full || skill;
-  const cmd = installCmd(s);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto border-white/10 bg-space/95 text-cream sm:rounded-[1.5rem]">
-        <DialogHeader>
-          <DialogTitle className="font-grotesk text-2xl uppercase tracking-wide text-cream">
-            {s.name}
-          </DialogTitle>
-          <DialogDescription className="font-mono text-xs uppercase text-cream/60">
-            {s.owner}/{s.repo} · {(s.stars ?? 0).toLocaleString()}★
-            {" · "}
-            {installStats(s).total.toLocaleString()} total
-            {installStats(s).estimated ? " (est.)" : " (live)"}
-            {" · "}
-            {installStats(s).weekly.toLocaleString()} this week
-            {" · "}
-            {installStats(s).daily.toLocaleString()} today
-          </DialogDescription>
-        </DialogHeader>
-
-        {loading && !full ? (
-          <div className="space-y-3" aria-busy="true" aria-label="Loading skill details">
-            <div className="skeleton h-4 w-2/3 max-w-[12rem]" />
-            <div className="skeleton h-3 w-full" />
-            <div className="skeleton h-3 w-5/6" />
-            <div className="skeleton h-3 w-4/6" />
-            <div className="mt-4 flex gap-2">
-              <div className="skeleton h-9 w-28 rounded-full" />
-              <div className="skeleton h-9 w-24 rounded-full" />
-            </div>
-          </div>
-        ) : (
-          <>
-            <p className="font-body text-[15px] leading-relaxed text-cream/80">
-              {descText(s)}
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="pressable inline-flex items-center gap-1.5 rounded-full bg-neon px-3.5 py-2 font-grotesk text-[11px] uppercase tracking-wide text-space"
-                onClick={async () => {
-                  const ok = await copyText(cmd);
-                  onToast?.(ok ? "Install command copied" : "Could not copy");
-                }}
-              >
-                <Copy className="h-3.5 w-3.5" /> Copy install
-              </button>
-              <button
-                type="button"
-                className="pressable liquid-glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 font-mono text-[11px] uppercase tracking-wide text-cream"
-                onClick={async () => {
-                  const ok = await copyText(skillShareUrl(s));
-                  onToast?.(ok ? "Skill link copied" : "Could not copy link");
-                }}
-              >
-                <Share2 className="h-3.5 w-3.5" /> Share
-              </button>
-              {onToggleCompare && (
-                <button
-                  type="button"
-                  className="pressable liquid-glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 font-mono text-[11px] uppercase tracking-wide text-cream"
-                  onClick={() => onToggleCompare(s)}
-                >
-                  <GitCompare className="h-3.5 w-3.5" />
-                  {compareIds?.has(String(s.id ?? `${s.owner}/${s.name}`)) ? "In compare" : "Compare"}
-                </button>
-              )}
-            </div>
-            <pre className="mt-3 overflow-x-auto rounded-[var(--radius-bezel)] bg-black/40 px-3 py-2 font-mono text-[11px] text-neon/90">{cmd}</pre>
-
-            {s.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {s.tags.map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full border border-neon/40 bg-neon/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-neon"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {s.license_spdx_id && (
-              <p className="font-mono text-[10px] uppercase tracking-wide text-cream/40">
-                License · {s.license_spdx_id}
-              </p>
-            )}
-            {s.hf_downloads != null && (
-              <p className="font-mono text-[10px] uppercase tracking-wide text-cream/50">
-                Hugging Face · {Number(s.hf_downloads).toLocaleString()} downloads
-                {s.hf_model_id ? ` · ${s.hf_model_id}` : ""}
-                {s.hf_likes != null ? ` · ${Number(s.hf_likes).toLocaleString()} likes` : ""}
-              </p>
-            )}
-
-            <div className="liquid-glass rounded-[1rem] p-4">
-              <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-neon">
-                <Terminal className="h-3 w-3" /> Install
-              </div>
-              <code className="break-all font-mono text-sm text-cream/90">{cmd}</code>
-            </div>
-
-            {related.length > 0 && (
-              <div>
-                <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-neon">
-                  Related
-                </p>
-                <ul className="space-y-2">
-                  {related.slice(0, 4).map((r) => (
-                    <li key={r.id}>
-                      <Link
-                        href={skillHref(r)}
-                        className="liquid-glass flex items-center justify-between rounded-xl px-3 py-2 transition hover:bg-white/10"
-                      >
-                        <span className="font-grotesk text-xs uppercase tracking-wide text-cream">
-                          {r.name}
-                        </span>
-                        <span className="font-mono text-[10px] text-cream/40">{r.stars}★</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </>
-        )}
-
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={skillHref(s)}
-            className="inline-flex items-center gap-1 rounded-full bg-neon px-4 py-2 font-grotesk text-sm uppercase tracking-wide text-space transition hover:opacity-90"
-          >
-            Full page <ChevronRight className="h-4 w-4" />
-          </Link>
-          <a
-            href={`https://github.com/${s.owner}/${s.repo}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="liquid-glass inline-flex items-center gap-1 rounded-full px-4 py-2 font-mono text-xs uppercase text-cream transition hover:bg-white/10"
-          >
-            Source <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export default function HomeClient({ initialTrending = [], initialWeekly = [], initialMeta = null }) {
   const [query, setQuery] = useState("");
   const [activeTag, setActiveTag] = useState("");
@@ -451,8 +263,6 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
   const [trendingLoadingMore, setTrendingLoadingMore] = useState(false);
   const [trendingHasMore, setTrendingHasMore] = useState(false);
   const TRENDING_PAGE = 20;
-  const [selected, setSelected] = useState(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     let url = query.trim()
@@ -2042,14 +1852,6 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
         </div>
       )}
 
-      <SkillDialog
-        skill={selected}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onToast={showToast}
-        compareIds={compareIds}
-        onToggleCompare={toggleCompare}
-      />
     </div>
   );
 }
