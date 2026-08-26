@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSkillDetail, getRelatedSkills } from "../../../../../db/queries.js";
 import { severityFromFlags } from "../../../../../lib/safety-scan.js";
 import { enrichSkillWithHf } from "../../../../../lib/hf-downloads.js";
+import SkillPageActions from "@/components/SkillPageActions";
 
 export const dynamic = "force-dynamic";
 
@@ -280,6 +281,7 @@ export default async function SkillPage({ params }) {
             Install
           </div>
           <code className="break-all font-mono text-sm text-cream/90 sm:text-base">{cmd}</code>
+          <SkillPageActions installCmd={cmd} shareUrl={pageUrl} skillName={skill.name} />
         </div>
 
         <div
@@ -301,6 +303,45 @@ export default async function SkillPage({ params }) {
             Browse more
           </Link>
         </div>
+
+        {skill.flag_reasons?.length > 0 && (
+          <section
+            className="animate-fade-up mt-10 rounded-[1.25rem] border border-amber-300/30 bg-amber-300/5 p-5 sm:p-6"
+            style={{ animationDelay: "260ms" }}
+            aria-labelledby="safety-notes-heading"
+          >
+            <p
+              id="safety-notes-heading"
+              className="font-mono text-[10px] uppercase tracking-[0.25em] text-amber-300"
+            >
+              Safety notes
+            </p>
+            <ul className="mt-3 space-y-1.5 font-mono text-xs leading-relaxed text-cream/70">
+              {skill.flag_reasons.map((reason, i) => (
+                <li key={i}>· {reason}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {skill.raw_content && (
+          <section
+            className="animate-fade-up mt-10 border-t border-white/10 pt-10"
+            style={{ animationDelay: "280ms" }}
+            aria-labelledby="skill-md-heading"
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-neon">Full details</p>
+            <h2
+              id="skill-md-heading"
+              className="mt-2 font-grotesk text-xl uppercase tracking-wide text-cream sm:text-2xl"
+            >
+              SKILL.md
+            </h2>
+            <pre className="liquid-glass mt-5 max-h-[36rem] overflow-auto whitespace-pre-wrap rounded-[1.25rem] p-5 font-mono text-xs leading-relaxed text-cream/80 sm:text-sm">
+              {skill.raw_content}
+            </pre>
+          </section>
+        )}
 
         {related.length > 0 && (
           <section
