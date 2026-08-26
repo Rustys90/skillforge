@@ -15,7 +15,6 @@ function safeJsonLd(obj) {
     .replace(/\u2029/g, "\\u2029");
 }
 
-
 const SITE_URL = process.env.SITE_URL || "https://skillforge-jet-chi.vercel.app";
 
 function skillHref(s) {
@@ -30,6 +29,30 @@ function installCmd(s) {
 
 function cleanPath(path) {
   return String(path || "").replace(/^\/+/, "").replace(/\/?SKILL\.md$/i, "");
+}
+
+/** Keep title under ~60 chars for SERP */
+function skillTitle(name) {
+  const n = String(name || "Skill").trim();
+  const suffix = " — AI agent skill";
+  if (n.length + suffix.length <= 58) return `${n}${suffix}`;
+  const max = 58 - suffix.length;
+  return `${n.slice(0, Math.max(12, max - 1)).trim()}…${suffix}`;
+}
+
+/** Prefer 120–160 char meta descriptions */
+function skillDescription(skill) {
+  let description = skill.description || "";
+  if (!description || /pending crawler/i.test(description)) {
+    description = `Install ${skill.name} from ${skill.owner}/${skill.repo} on SkillForge. Safety-scanned SKILL.md for Claude, Cursor, and coding agents. One-command install.`;
+  }
+  if (description.length < 80) {
+    description = `${description} Browse related agent skills and install with npx skillforge add.`;
+  }
+  if (description.length > 160) {
+    description = `${description.slice(0, 157).trim()}…`;
+  }
+  return description;
 }
 
 const SEV_STYLE = {
@@ -48,12 +71,10 @@ export async function generateMetadata({ params }) {
   }
   const slug = cleanPath(skill.path);
   const canonical = `${SITE_URL}/skills/${skill.owner}/${skill.repo}/${slug}`;
-  let description = skill.description || "";
-  if (!description || /pending crawler/i.test(description)) {
-    description = `Install ${skill.name} from ${skill.owner}/${skill.repo}. Safety-scanned agent skill on SkillForge.`;
-  }
+  const description = skillDescription(skill);
+  const title = skillTitle(skill.name);
   return {
-    title: `${skill.name} — install for your AI agent`,
+    title,
     description,
     alternates: { canonical },
     openGraph: {
@@ -88,6 +109,7 @@ export default async function SkillPage({ params }) {
   const cmd = installCmd(skill);
   const slug = cleanPath(skill.path);
   const pageUrl = `${SITE_URL}/skills/${skill.owner}/${skill.repo}/${slug}`;
+  const description = skillDescription(skill);
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -109,8 +131,6 @@ export default async function SkillPage({ params }) {
     ],
   };
 
-
-  
   const howToLd = {
     "@context": "https://schema.org",
     "@type": "HowTo",
@@ -139,7 +159,7 @@ export default async function SkillPage({ params }) {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: skill.name,
-    description: skill.description || undefined,
+    description: description || undefined,
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Any",
     url: pageUrl,
@@ -149,6 +169,23 @@ export default async function SkillPage({ params }) {
       url: `https://github.com/${skill.owner}`,
     },
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    isAccessibleForFree: true,
+    codeRepository: `https://github.com/${skill.owner}/${skill.repo}`,
+  };
+
+  const sourceCodeLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    name: skill.name,
+    description: description || undefined,
+    codeRepository: `https://github.com/${skill.owner}/${skill.repo}`,
+    programmingLanguage: "Markdown",
+    url: pageUrl,
+    author: {
+      "@type": "Person",
+      name: skill.owner,
+      url: `https://github.com/${skill.owner}`,
+    },
   };
 
   return (
@@ -157,14 +194,18 @@ export default async function SkillPage({ params }) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: safeJsonLd(howToLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(howToLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(sourceCodeLd) }}
       />
 
       <div className="relative z-10 mx-auto max-w-3xl px-6 py-10 sm:px-10 sm:py-16">
@@ -250,7 +291,7 @@ export default async function SkillPage({ params }) {
             {skill.tags.map((t) => (
               <Link
                 key={t}
-                href={`/?tag=${encodeURIComponent(t)}`}
+                href={`/categories/${encodeURIComponent(t)}`}
                 className="rounded-full border border-neon/40 bg-neon/10 px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-neon transition hover:bg-neon/20"
               >
                 {t}
@@ -329,10 +370,23 @@ export default async function SkillPage({ params }) {
           </section>
         )}
 
+        {!skill.raw_content && (
+          <section
+            className="animate-fade-up mt-10 border-t border-white/10 pt-10"
+            style={{ animationDelay: "280ms" }}
+          >
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-cream/40">Full details</p>
+            <p className="mt-3 font-body text-sm leading-relaxed text-cream/60">
+              Full SKILL.md text is still being ingested by the crawler for this entry. You can install now
+              and open the public GitHub source for the complete file.
+            </p>
+          </section>
+        )}
+
         {related.length > 0 && (
           <section
             className="animate-fade-up mt-16 border-t border-white/10 pt-12"
-            style={{ animationDelay: "280ms" }}
+            style={{ animationDelay: "300ms" }}
             aria-labelledby="related-heading"
           >
             <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-neon">More like this</p>
