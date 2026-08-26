@@ -17,6 +17,8 @@ export default function robots() {
     "/acceptable-use",
     "/llms.txt",
     "/sitemap.xml",
+    "/ai/",
+    "/.well-known/ai.txt",
   ];
 
   const aiCitationBots = [
