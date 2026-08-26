@@ -2,21 +2,34 @@ const SITE_URL = process.env.SITE_URL || "https://skillforge-jet-chi.vercel.app"
 
 /**
  * GEO / Agentic SEO: allow citation bots; keep admin & APIs closed.
- * Ref: Auriti-Labs/geo-optimizer-skill, Bhanunamikaze/Agentic-SEO-Skill
  */
 export default function robots() {
   const disallowPrivate = ["/admin", "/api/", "/api/admin", "/api/cron"];
-  const allowPublic = ["/", "/skills/", "/privacy", "/terms", "/acceptable-use", "/llms.txt", "/sitemap.xml"];
+  const allowPublic = [
+    "/",
+    "/skills/",
+    "/categories/",
+    "/about",
+    "/faq",
+    "/trust",
+    "/privacy",
+    "/terms",
+    "/acceptable-use",
+    "/llms.txt",
+    "/sitemap.xml",
+  ];
 
   const aiCitationBots = [
-    "OAI-SearchBot", // ChatGPT Search citations
+    "OAI-SearchBot",
     "ChatGPT-User",
     "PerplexityBot",
     "ClaudeBot",
     "anthropic-ai",
-    "Google-Extended", // Gemini AI Overviews
+    "Google-Extended",
     "Applebot-Extended",
     "Bytespider",
+    "Amazonbot",
+    "meta-externalagent",
   ];
 
   const rules = [
@@ -25,7 +38,6 @@ export default function robots() {
       allow: "/",
       disallow: disallowPrivate,
     },
-    // Training-oriented bots: still allow public catalog pages (product is public index)
     {
       userAgent: "GPTBot",
       allow: allowPublic,

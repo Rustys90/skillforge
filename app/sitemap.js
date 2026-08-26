@@ -5,8 +5,10 @@ const SITE_URL = process.env.SITE_URL || "https://skillforge-jet-chi.vercel.app"
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
 
+/** Match skillHref / installCmd / cleanPath — never include trailing SKILL.md */
 function skillUrl(s) {
-  const path = String(s.path || `skills/${s.name}/SKILL.md`).replace(/^\/+/, "");
+  const raw = String(s.path || `skills/${s.name}/SKILL.md`).replace(/^\/+/, "");
+  const path = raw.replace(/\/?SKILL\.md$/i, "");
   return `${SITE_URL}/skills/${s.owner}/${s.repo}/${path}`;
 }
 
@@ -62,8 +64,7 @@ export default async function sitemap() {
     { url: `${SITE_URL}/privacy`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
     { url: `${SITE_URL}/terms`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
     { url: `${SITE_URL}/acceptable-use`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.3 },
-    // Category hubs (architecture: every category is a topic hub)
-    ...["pdf", "browser", "git", "sql", "docker", "deploy", "api", "security", "xlsx", "csv"].map((tag) => ({
+    ...["pdf", "browser", "git", "sql", "docker", "deploy", "api", "security", "xlsx", "csv", "testing", "email", "docs"].map((tag) => ({
       url: `${SITE_URL}/categories/${tag}`,
       lastModified: new Date(),
       changeFrequency: "daily",
