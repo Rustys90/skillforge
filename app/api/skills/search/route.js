@@ -1,6 +1,17 @@
 // app/api/skills/search/route.js
 import { searchSkills } from "../../../../db/queries.js";
 import { rateLimit } from "../../../../lib/rate-limit.js";
+import { qualityScore } from "../../../../lib/skill-rank.js";
+
+function isPlaceholderDesc(s) {
+  const d = String(s?.description || "").toLowerCase();
+  return (
+    !d ||
+    d.includes("description pending") ||
+    d.includes("crawler verification") ||
+    d.startsWith("a skill named ")
+  );
+}
 
 export async function GET(request) {
   const rl = await rateLimit(request, "search");
@@ -14,8 +25,21 @@ export async function GET(request) {
   const offset = Math.min(Math.max(parseInt(searchParams.get("offset") || "0", 10) || 0, 0), 5000);
 
   try {
-    const { results, total } = await searchSkills({ q, tag, limit, offset });
-    return Response.json({ results, count: results.length, total });
+    // Fetch a wider window then re-rank so mega-repo star clones don't dominate
+    const fetchLimit = Math.min(limit + offset + 40, 80);
+    const { results: raw, total } = await searchSkills({ q, tag, limit: fetchLimit, offset: 0 });
+
+    const ranked = (raw || [])
+      .map((s) => ({
+        ...s,
+        _q: qualityScore(s) - (isPlaceholderDesc(s) ? 50 : 0),
+        has_body: Boolean(s.raw_content && String(s.raw_content).length >= 80),
+      }))
+      .sort((a, b) => b._q - a._q)
+      .slice(offset, offset + limit)
+      .map(({ _q, ...rest }) => rest);
+
+    return Response.json({ results: ranked, count: ranked.length, total });
   } catch (err) {
     console.error("[api/search] failed:", err.message);
     return Response.json({ error: "search failed" }, { status: 500 });
