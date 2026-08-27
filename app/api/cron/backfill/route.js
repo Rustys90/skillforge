@@ -1,10 +1,10 @@
-// app/api/cron/backfill/route.js
+// app/api/cron/backfill/route.js — fill thin / seed skill bodies
 import { getFileContent, throttle } from "../../../../lib/github.js";
 import { parseSkillContent, hashContent, looksLikeAgentSkill } from "../../../../lib/parse-skill.js";
 import { listSkillsMissingRawContent, updateSkillContent } from "../../../../db/backfill-helpers.js";
 
 export const maxDuration = 60;
-const LIMIT = parseInt(process.env.BACKFILL_BATCH || "20", 10);
+const LIMIT = parseInt(process.env.BACKFILL_BATCH || "28", 10);
 
 function authorizedCron(request) {
   const expected = process.env.CRON_SECRET || "";
@@ -15,16 +15,19 @@ function authorizedCron(request) {
   return header === expected || bearer === expected;
 }
 
-export async function GET(request) {
+async function run(request) {
   if (!authorizedCron(request)) return Response.json({ error: "unauthorized" }, { status: 401 });
   const results = { attempted: 0, updated: 0, skipped: 0, errors: 0 };
   const rows = await listSkillsMissingRawContent(LIMIT);
   for (const row of rows) {
     results.attempted++;
     try {
-      await throttle(1200);
+      await throttle(900);
       const content = await getFileContent(row.owner, row.repo, row.path);
-      if (!content || !looksLikeAgentSkill(content)) { results.skipped++; continue; }
+      if (!content || !looksLikeAgentSkill(content)) {
+        results.skipped++;
+        continue;
+      }
       const parsed = parseSkillContent(content, row.repo, row.path);
       await updateSkillContent(row.id, {
         raw_content: content,
@@ -40,4 +43,11 @@ export async function GET(request) {
     }
   }
   return Response.json(results);
+}
+
+export async function GET(request) {
+  return run(request);
+}
+export async function POST(request) {
+  return run(request);
 }

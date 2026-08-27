@@ -1,12 +1,16 @@
 import { query } from "./client.js";
 
-/** Skills missing full SKILL.md body — used by backfill cron. */
+/** Skills missing full SKILL.md body or real description — used by backfill cron. */
 export async function listSkillsMissingRawContent(limit = 25) {
   const { rows } = await query(
     `SELECT id, owner, repo, path, raw_url, content_hash, stars, name, description, tags,
             license_spdx_id, source, repo_updated_at, has_real_desc
      FROM skills
-     WHERE raw_content IS NULL OR length(coalesce(raw_content, '')) < 80
+     WHERE raw_content IS NULL
+        OR length(coalesce(raw_content, '')) < 80
+        OR has_real_desc IS NOT TRUE
+        OR description ILIKE '%description pending%'
+        OR description ILIKE 'A skill named %'
      ORDER BY last_crawled_at ASC NULLS FIRST, id ASC
      LIMIT $1`,
     [limit]
