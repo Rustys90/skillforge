@@ -11,7 +11,7 @@ const SylvaLivingWorldScene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="absolute inset-0" style={{ background: "#010828" }} aria-hidden />
+      <div className="absolute inset-0" style={{ background: "#0a0a0a" }} aria-hidden />
     ),
   }
 );
@@ -23,7 +23,7 @@ export default function HeroSpaceBg() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 70%, rgba(74,77,68,0.95) 0%, #010828 72%)",
+            "radial-gradient(ellipse 80% 60% at 50% 70%, rgba(45,45,45,0.92) 0%, #0a0a0a 72%)",
         }}
       />
       <div className="absolute inset-0 min-h-full min-w-full">
@@ -33,7 +33,7 @@ export default function HeroSpaceBg() {
         className="pointer-events-none absolute inset-0 z-[3]"
         style={{
           background:
-            "linear-gradient(180deg, rgba(1,8,40,0.55) 0%, rgba(1,8,40,0.22) 38%, rgba(1,8,40,0.72) 100%), radial-gradient(ellipse 70% 40% at 50% 100%, rgba(111,255,0,0.05), transparent 55%)",
+            "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.22) 38%, rgba(0,0,0,0.72) 100%), radial-gradient(ellipse 70% 40% at 50% 100%, rgba(44,255,5,0.08), transparent 55%)",
         }}
       />
     </div>
