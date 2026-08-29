@@ -55,7 +55,7 @@ export const metadata = {
       "max-video-preview": -1,
     },
   },
-  other: { "theme-color": "#010828" },
+  other: { "theme-color": "#0A0A0A" },
 };
 
 const websiteLd = {
