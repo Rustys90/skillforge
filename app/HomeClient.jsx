@@ -9,7 +9,7 @@ import dynamic from "next/dynamic";
 const HeroSpaceBg = dynamic(() => import("@/components/HeroSpaceBg"), {
   ssr: false,
   loading: () => (
-    <div className="hero-space-bg absolute inset-0" style={{ background: "#050b12" }} aria-hidden />
+    <div className="hero-space-bg absolute inset-0" style={{ background: "#0b0710" }} aria-hidden />
   ),
 });
 
