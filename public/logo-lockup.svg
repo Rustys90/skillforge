@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" fill="none" role="img" aria-label="SkillForge">
-  <rect width="64" height="64" rx="14" fill="#050B12"/>
-  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" stroke="#0F2430" stroke-width="1"/>
-  <path d="M18 40h28l-3 6H21l-3-6Z" fill="#0F2430"/>
-  <path d="M22 40V28c0-6 4.5-10 10-10s10 4 10 10v12" stroke="#00FF52" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="32" cy="24" r="3.2" fill="#00FFFF"/>
-  <circle cx="32" cy="24" r="6" stroke="#00AEFF" stroke-opacity="0.55" stroke-width="1.5"/>
-  <path d="M20 46h24" stroke="#00DE94" stroke-width="2" stroke-linecap="round" opacity="0.95"/>
-  <text x="80" y="40" fill="#E8FBFF" font-family="ui-sans-serif, system-ui, sans-serif" font-size="28" font-weight="700" letter-spacing="0.04em">SkillForge</text>
+  <rect width="64" height="64" rx="14" fill="#0B0710"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" stroke="#1A1224" stroke-width="1"/>
+  <path d="M18 40h28l-3 6H21l-3-6Z" fill="#1A1224"/>
+  <path d="M22 40V28c0-6 4.5-10 10-10s10 4 10 10v12" stroke="#6BFF00" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="32" cy="24" r="3.2" fill="#9D00FF"/>
+  <circle cx="32" cy="24" r="6" stroke="#DE811D" stroke-opacity="0.7" stroke-width="1.5"/>
+  <path d="M20 46h24" stroke="#5B8040" stroke-width="2" stroke-linecap="round" opacity="0.95"/>
+  <text x="80" y="40" fill="#F6F0FF" font-family="ui-sans-serif, system-ui, sans-serif" font-size="28" font-weight="700" letter-spacing="0.04em">SkillForge</text>
 </svg>
