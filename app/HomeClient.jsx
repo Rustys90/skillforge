@@ -9,7 +9,7 @@ import dynamic from "next/dynamic";
 const HeroSpaceBg = dynamic(() => import("@/components/HeroSpaceBg"), {
   ssr: false,
   loading: () => (
-    <div className="hero-space-bg absolute inset-0" style={{ background: "#010828" }} aria-hidden />
+    <div className="hero-space-bg absolute inset-0" style={{ background: "#0a0a0a" }} aria-hidden />
   ),
 });
 
@@ -543,8 +543,15 @@ export default function HomeClient({ initialTrending = [], initialWeekly = [], i
         <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-content flex-col px-4 py-6 sm:px-10 sm:py-8 lg:px-16">
           <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center justify-between gap-3">
-              <Link href="/" className="font-grotesk text-[16px] uppercase tracking-wide text-cream">
-                SkillForge
+              <Link href="/" className="group flex items-center gap-2.5 text-cream" aria-label="SkillForge home">
+                <img
+                  src="/logo.svg"
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 shrink-0 rounded-[10px] ring-1 ring-white/10 transition group-hover:ring-neon/40"
+                />
+                <span className="font-grotesk text-[16px] uppercase tracking-wide">SkillForge</span>
               </Link>
               <div className="flex items-center gap-2 sm:hidden">
                 <button
