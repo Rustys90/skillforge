@@ -1,8 +1,8 @@
 /*
   SkillForge visual system (post look-pass)
   SUBJECT   Agent skill registry
-  GROUND    Alchemical reaction console
-  PALETTE   space #0B0710 · surface #1A1224 · cream #F6F0FF · neon #6BFF00 · volt #9D00FF · ember #DE811D  (Alchemical reaction)
+  GROUND    Ops console in deep space
+  PALETTE   space #010828 · cream #EFF4FF · neon #6FFF00  (Orbis original)
   TYPE      Anton display · Condiment signature · mono chrome · soft body for long copy
   SPACE     intra 8/12/16 · section 64/80/112
   SHAPE     --radius-bezel 20px · pills full · elevation tonal only
@@ -15,15 +15,13 @@
 @tailwind utilities;
 
 :root {
-  --space: #0b0710;
-  --surface: #1a1224;
-  --volt: #9d00ff;
-  --ember: #de811d;
-  --moss: #5b8040;
-  --cream: #f6f0ff;
-  --neon: #6bff00;
+  --space: #010828;
+  --surface: #112240;
+  --cream: #eff4ff;
+  --neon: #6fff00;
+  --volt: #6fff00;
   --glass: rgba(255, 255, 255, 0.01);
-  --focus: rgba(107, 255, 0, 0.65);
+  --focus: rgba(111, 255, 0, 0.65);
   --radius-bezel: 20px;
   --radius-panel: 20px;
   --duration-press: 100ms;
@@ -386,7 +384,7 @@ button:disabled,
 
 ::selection {
   background: rgba(111, 255, 0, 0.28);
-  color: #f6f0ff;
+  color: #eff4ff;
 }
 
 .badge-est {
@@ -669,7 +667,7 @@ button:disabled,
 
 /* Hero space background — always visible */
 .hero-space-bg {
-  background: #0b0710;
+  background: #010828;
   z-index: 0;
 }
 .hero-space-bg canvas {
@@ -687,7 +685,7 @@ button:disabled,
     radial-gradient(ellipse 90% 60% at 20% 30%, rgba(30, 80, 180, 0.35), transparent 55%),
     radial-gradient(ellipse 70% 50% at 80% 60%, rgba(20, 50, 120, 0.3), transparent 50%),
     radial-gradient(ellipse 50% 40% at 50% 100%, rgba(111, 255, 0, 0.06), transparent 45%),
-    #0b0710;
+    #010828;
   animation: hero-drift 18s ease-in-out infinite alternate;
 }
 .hero-space-fallback::before,
@@ -742,7 +740,7 @@ button:disabled,
 /* ——— Cinematic Orbis hero (video + grade) ——— */
 .hero-space-bg {
   z-index: 0;
-  background: #0b0710;
+  background: #010828;
 }
 .hero-cinematic-base {
   position: absolute;
@@ -751,7 +749,7 @@ button:disabled,
     radial-gradient(ellipse 100% 70% at 50% -10%, rgba(40, 90, 200, 0.45), transparent 55%),
     radial-gradient(ellipse 60% 50% at 85% 70%, rgba(111, 255, 0, 0.08), transparent 50%),
     radial-gradient(ellipse 50% 40% at 10% 80%, rgba(60, 100, 220, 0.2), transparent 45%),
-    linear-gradient(180deg, #121212 0%, #0b0710 45%, #000000 100%);
+    linear-gradient(180deg, #121212 0%, #010828 45%, #000000 100%);
   animation: hero-aurora 14s ease-in-out infinite alternate;
 }
 .hero-cinematic-base::after {
@@ -828,7 +826,7 @@ button:disabled,
   width: 100% !important;
   height: 100% !important;
   min-height: 100% !important;
-  background: #0b0710 !important;
+  background: #010828 !important;
 }
 .hero-threeui-liquid canvas {
   width: 100% !important;
@@ -843,7 +841,7 @@ button:disabled,
   width: 100% !important;
   height: 100% !important;
   min-height: 100% !important;
-  background: #0b0710 !important;
+  background: #010828 !important;
 }
 .hero-threeui-warp canvas {
   width: 100% !important;
